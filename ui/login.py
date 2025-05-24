@@ -61,9 +61,8 @@ class LoginWindow(QWidget):
             # Keep a reference to the master window
             self.master_window = MasterPasswordWindow(db_username)
             self.master_window.show()
+            self.close()
             
-            # Don't close the login window immediately
-            # self.close()  # Remove this line initially for testing
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")

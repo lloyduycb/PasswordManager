@@ -1,8 +1,6 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QLineEdit, QTextEdit, QPushButton, QMessageBox
-from PyQt5.QtCore import QComboBox
-from core.db import insert_password_entry
-from core.crypto import encrypt_password, decrypt_password
-
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QLineEdit, QTextEdit, QPushButton, QMessageBox, QComboBox
+from core.db import insert_password_entry, fetch_folders
+from core.crypto import encrypt_password
 
 class AddPasswordWindow(QWidget):
     def __init__(self):
@@ -29,13 +27,17 @@ class AddPasswordWindow(QWidget):
 
         self.folder_dropdown = QComboBox()
         self.folder_dropdown.addItem("None")
-        self.folders = fetch_folders()
-        for _, name in self.folders:
-            self.folder_dropdown.addItem(name)
+
+        try:
+            self.folders = fetch_folders()  # List of (id, name)
+            for _, name in self.folders:
+                self.folder_dropdown.addItem(name)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load folders:\n{str(e)}")
+            self.folders = []
 
         layout.addWidget(QLabel("Folder"))
         layout.addWidget(self.folder_dropdown)
-
 
         self.submit_btn = QPushButton("Save")
         self.submit_btn.clicked.connect(self.save_entry)
@@ -51,26 +53,29 @@ class AddPasswordWindow(QWidget):
         self.setLayout(layout)
 
     def save_entry(self):
-        from core.db import insert_password_entry
-        from core.crypto import encrypt_password  # if using encryption
+        try:
+            name = self.name_input.text()
+            email = self.email_input.text()
+            url = self.url_input.text()
+            raw_pw = self.password_input.text()
+            notes = self.notes_input.toPlainText()
 
-        name = self.name_input.text()
-        email = self.email_input.text()
-        url = self.url_input.text()
-        password = encrypt_password(self.password_input.text())
-        notes = self.notes_input.toPlainText()
+            if not name or not raw_pw:
+                QMessageBox.warning(self, "Error", "Name and Password are required.")
+                return
 
-        # Get folder ID
-        folder_name = self.folder_dropdown.currentText()
-        folder_id = None
-        if folder_name != "None":
-            folder_id = next((fid for fid, name in self.folders if name == folder_name), None)
+            password = encrypt_password(raw_pw)
 
-        if not name or not password:
-            QMessageBox.warning(self, "Error", "Name and Password are required.")
-            return
+            folder_name = self.folder_dropdown.currentText()
+            folder_id = None
+            if folder_name != "None":
+                folder_id = next((fid for fid, name in self.folders if name == folder_name), None)
 
-        insert_password_entry(name, email, url, password, notes, folder_id)
-        QMessageBox.information(self, "Saved", "Password entry added.")
-        self.close()
+            insert_password_entry(name, email, url, password, notes, folder_id)
+            QMessageBox.information(self, "Saved", "Password entry added.")
+            self.close()
 
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            QMessageBox.critical(self, "Error", f"Failed to save password:\n{str(e)}")
