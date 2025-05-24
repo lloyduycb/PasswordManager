@@ -228,16 +228,19 @@ class HomeWindow(QWidget):
 
     def add_new_folder(self):
         from PyQt5.QtWidgets import QInputDialog
-
         name, ok = QInputDialog.getText(self, "New Folder", "Folder name:")
+
         if ok and name:
             from core.db import insert_folder
             try:
                 insert_folder(name)
                 QMessageBox.information(self, "Folder Created", f"Folder '{name}' added.")
-                self.reload_folders()  # You’ll create this to refresh sidebar/dynamic folder buttons
-            except:
-                QMessageBox.warning(self, "Error", f"Folder '{name}' already exists.")
+                self.reload_folders()
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                QMessageBox.warning(self, "Error", f"Could not add folder:\n{str(e)}")
+
 
     def reload_folders(self):
         from core.db import fetch_folders
