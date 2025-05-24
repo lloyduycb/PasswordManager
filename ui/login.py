@@ -72,6 +72,7 @@ class LoginWindow(QWidget):
                 from ui.otp_verify import OTPVerifyWindow
                 self.otp_window = OTPVerifyWindow(db_username, self.open_master_window)
                 self.otp_window.show()
+                self.close()
             else:
                 self.open_master_window()
 
