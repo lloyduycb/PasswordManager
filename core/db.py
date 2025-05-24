@@ -4,15 +4,20 @@ import datetime
 def create_user_table():
     conn = sqlite3.connect("vault.db")
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        email TEXT,
-        password TEXT,
-        is_verified INTEGER DEFAULT 0,
-        verification_code TEXT,
-        code_expiry DATETIME
-    )''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS passwords (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            email TEXT,
+            url TEXT,
+            password TEXT,
+            notes TEXT,
+            folder_id INTEGER,
+            last_used DATETIME DEFAULT CURRENT_TIMESTAMP,
+            is_favourite INTEGER DEFAULT 0,
+            FOREIGN KEY (folder_id) REFERENCES folders(id)
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -46,6 +51,7 @@ def init_db():
             notes TEXT,
             folder_id INTEGER,
             last_used DATETIME DEFAULT CURRENT_TIMESTAMP,
+            is_favourite INTEGER DEFAULT 0,
             FOREIGN KEY (folder_id) REFERENCES folders(id)
         )
     ''')
@@ -60,6 +66,10 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+    ensure_favourite_column()
+
+
 
 def insert_password_entry(name, email, url, password, notes, folder_id=None):
     conn = None
@@ -121,6 +131,31 @@ def fetch_recent_passwords(limit=10):
     conn = sqlite3.connect("vault.db")
     c = conn.cursor()
     c.execute("SELECT id, name FROM passwords ORDER BY last_used DESC LIMIT ?", (limit,))
+    results = c.fetchall()
+    conn.close()
+    return results
+
+def ensure_favourite_column():
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(passwords)")
+    columns = [col[1] for col in c.fetchall()]
+    if "is_favourite" not in columns:
+        c.execute("ALTER TABLE passwords ADD COLUMN is_favourite INTEGER DEFAULT 0")
+        conn.commit()
+    conn.close()
+
+def set_favourite(entry_id, value=True):
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+    c.execute("UPDATE passwords SET is_favourite = ? WHERE id = ?", (1 if value else 0, entry_id))
+    conn.commit()
+    conn.close()
+
+def fetch_favourites():
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+    c.execute("SELECT id, name FROM passwords WHERE is_favourite = 1")
     results = c.fetchall()
     conn.close()
     return results

@@ -62,6 +62,11 @@ class ViewPasswordWindow(QWidget):
         layout.addWidget(QLabel("Notes"))
         layout.addWidget(self.notes_input)
 
+        self.fav_btn = QPushButton("⭐ Mark as Favourite")
+        self.fav_btn.setCheckable(True)
+        self.fav_btn.toggled.connect(self.toggle_favourite)
+        layout.addWidget(self.fav_btn)
+
         btn_layout = QHBoxLayout()
         save_btn = QPushButton("Save")
         save_btn.clicked.connect(self.save_entry)
@@ -77,21 +82,24 @@ class ViewPasswordWindow(QWidget):
 
     def load_entry(self):
         from core.db import update_last_used
-        update_last_used(self.entry_id)  # ✅ log view timestamp
+        update_last_used(self.entry_id)  
 
         conn = sqlite3.connect("vault.db")
         c = conn.cursor()
-        c.execute("SELECT name, email, url, password, notes FROM passwords WHERE id = ?", (self.entry_id,))
-        row = c.fetchone()
+        c.execute("SELECT name, email, url, password, notes, is_favourite FROM passwords WHERE id = ?", (self.entry_id,))
+        row = c.fetchone() 
         conn.close()
 
         if row:
-            name, email, url, encrypted_pw, notes = row
+            name, email, url, encrypted_pw, notes, is_fav = row
             self.name_input.setText(name)
             self.email_input.setText(email)
             self.url_input.setText(url)
             self.password_input.setText(decrypt_password(encrypted_pw))
             self.notes_input.setPlainText(notes)
+
+            self.fav_btn.setChecked(bool(is_fav))
+            self.fav_btn.setText("⭐ Unfavourite" if is_fav else "⭐ Mark as Favourite")
 
 
     def save_entry(self):
@@ -138,3 +146,12 @@ class ViewPasswordWindow(QWidget):
 
     def toggle_visibility(self, checked):
         self.password_input.setEchoMode(QLineEdit.Normal if checked else QLineEdit.Password)
+
+    def toggle_favourite(self):
+        from core.db import set_favourite
+        is_checked = self.fav_btn.isChecked()
+        set_favourite(self.entry_id, is_checked)
+        self.fav_btn.setText("⭐ Unfavourite" if is_checked else "⭐ Mark as Favourite")
+
+        if self.refresh_callback:
+            self.refresh_callback()

@@ -97,7 +97,7 @@ class HomeWindow(QWidget):
             "Folders": self.build_folder_view(),
             "Favorites": self.build_label("Favorites view coming soon"),
             "Notifications": self.build_label("Notifications view coming soon"),
-            "Tools": self.build_label("Tools view coming soon")
+            "Tools": self.build_generator_view()
         }
 
         for v in self.views.values():
@@ -292,6 +292,75 @@ class HomeWindow(QWidget):
         from ui.view_password import ViewPasswordWindow
         self.detail_window = ViewPasswordWindow(entry_id, refresh_callback=self.reload_all)
         self.detail_window.show()
+
+    def build_generator_view(self):
+        from core.utils import generate_password
+        from PyQt5.QtWidgets import QCheckBox, QSpinBox, QTextEdit
+
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel("Password Generator"))
+
+        # Options
+        self.length_input = QSpinBox()
+        self.length_input.setRange(4, 64)
+        self.length_input.setValue(12)
+
+        self.upper_cb = QCheckBox("Include Uppercase Letters")
+        self.upper_cb.setChecked(True)
+
+        self.lower_cb = QCheckBox("Include Lowercase Letters")
+        self.lower_cb.setChecked(True)
+
+        self.digits_cb = QCheckBox("Include Numbers")
+        self.digits_cb.setChecked(True)
+
+        self.symbols_cb = QCheckBox("Include Symbols")
+        self.symbols_cb.setChecked(True)
+
+        self.output_box = QTextEdit()
+        self.output_box.setReadOnly(True)
+
+        generate_btn = QPushButton("Generate Password")
+        generate_btn.clicked.connect(lambda: self.generate_password_ui(generate_password))
+
+        # Layout
+        layout.addWidget(QLabel("Length"))
+        layout.addWidget(self.length_input)
+        layout.addWidget(self.upper_cb)
+        layout.addWidget(self.lower_cb)
+        layout.addWidget(self.digits_cb)
+        layout.addWidget(self.symbols_cb)
+        layout.addWidget(generate_btn)
+        layout.addWidget(self.output_box)
+        copy_btn = QPushButton("Copy to Clipboard")
+        copy_btn.clicked.connect(self.copy_password_to_clipboard)
+        layout.addWidget(copy_btn)
+
+
+        widget.setLayout(layout)
+        return widget
+    
+    def generate_password_ui(self, generator_func):
+        length = self.length_input.value()
+        password = generator_func(
+            length=length,
+            use_upper=self.upper_cb.isChecked(),
+            use_lower=self.lower_cb.isChecked(),
+            use_digits=self.digits_cb.isChecked(),
+            use_symbols=self.symbols_cb.isChecked()
+        )
+        self.output_box.setText(password)
+
+    def copy_password_to_clipboard(self):
+        from PyQt5.QtWidgets import QApplication
+        clipboard = QApplication.clipboard()
+        clipboard.setText(self.output_box.toPlainText())
+
+        QMessageBox.information(self, "Copied", "Password copied to clipboard!")
+
+
+
 
 
 
