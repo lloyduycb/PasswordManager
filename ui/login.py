@@ -38,6 +38,7 @@ class LoginWindow(QWidget):
             return
 
         try:
+            # Get user by username or email
             conn = sqlite3.connect("vault.db")
             c = conn.cursor()
             c.execute("""
@@ -56,22 +57,38 @@ class LoginWindow(QWidget):
             if not bcrypt.checkpw(password.encode(), db_password):
                 QMessageBox.warning(self, "Error", "Incorrect password.")
                 return
-            
-            from ui.master_password import MasterPasswordWindow
-            # If login is successful, open the master password window
 
-            # Keep a reference to the master window
-            self.master_window = MasterPasswordWindow(db_username)
-            self.master_window.show()
-            self.close()
-            
+            # ✅ Store username for later
+            self.logged_in_username = db_username
+
+            # ✅ Check for OTP
+            conn = sqlite3.connect("vault.db")
+            c = conn.cursor()
+            c.execute("SELECT otp_secret FROM users WHERE username = ?", (db_username,))
+            row = c.fetchone()
+            conn.close()
+
+            if row and row[0]:  # otp_secret exists
+                from ui.otp_verify import OTPVerifyWindow
+                self.otp_window = OTPVerifyWindow(db_username, self.open_master_window)
+                self.otp_window.show()
+            else:
+                self.open_master_window()
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
-            print(f"Error during login: {e}")  # Check console for this
+            print(f"Error during login: {e}")
+
 
     def open_home(self):
         from ui.home import HomeWindow
         self.home = HomeWindow()
         self.home.show()
         self.close()
+
+    def open_master_window(self):
+        from ui.master_password import MasterPasswordWindow
+        self.master_window = MasterPasswordWindow(self.logged_in_username)
+        self.master_window.show()
+        self.close()
+

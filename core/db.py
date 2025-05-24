@@ -68,6 +68,7 @@ def init_db():
     conn.close()
 
     ensure_favourite_column()
+    ensure_otp_column()
 
 
 
@@ -159,5 +160,32 @@ def fetch_favourites():
     results = c.fetchall()
     conn.close()
     return results
+
+def ensure_otp_column():
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(users)")
+    columns = [col[1] for col in c.fetchall()]
+    if "otp_secret" not in columns:
+        c.execute("ALTER TABLE users ADD COLUMN otp_secret TEXT")
+        conn.commit()
+    conn.close()
+
+def create_user_table():
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            email TEXT UNIQUE,
+            password BLOB,
+            is_verified INTEGER DEFAULT 0,
+            otp_secret TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+
 
 

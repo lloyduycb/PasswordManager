@@ -4,6 +4,7 @@ import bcrypt
 import random
 import datetime
 import sqlite3
+import pyotp
 
 class RegisterWindow(QWidget):
     def __init__(self):
@@ -48,16 +49,23 @@ class RegisterWindow(QWidget):
         try:
             hashed_pwd = bcrypt.hashpw(pwd.encode(), bcrypt.gensalt())
 
+            otp_secret = pyotp.random_base32()
+
             conn = sqlite3.connect("vault.db")
             c = conn.cursor()
             c.execute("""
-                INSERT INTO users (username, email, password, is_verified) 
-                VALUES (?, ?, ?, 1)
-            """, (uname, email, hashed_pwd))
+                INSERT INTO users (username, email, password, is_verified, otp_secret) 
+                VALUES (?, ?, ?, 1, ?)
+            """, (uname, email, hashed_pwd, otp_secret))
             conn.commit()
             conn.close()
 
             QMessageBox.information(self, "Success", "Account created successfully!")
+
+            from ui.otp_setup import OTPSetupWindow
+            self.otp_window = OTPSetupWindow(uname, otp_secret)
+            self.otp_window.show()
+
 
             # ✅ Go to master password setup
             from ui.master_password import MasterPasswordWindow
