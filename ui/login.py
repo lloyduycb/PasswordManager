@@ -74,7 +74,34 @@ class LoginWindow(QWidget):
                 self.otp_window.show()
                 self.close()
             else:
-                self.open_master_window()
+                import random, datetime
+                from core.emailer import send_otp_email
+
+                # Generate OTP code and expiry
+                otp_code = str(random.randint(100000, 999999))
+                otp_expiry = datetime.datetime.now() + datetime.timedelta(minutes=5)
+
+                # Store OTP in DB
+                conn = sqlite3.connect("vault.db")
+                c = conn.cursor()
+                c.execute("UPDATE users SET otp_code = ?, otp_expiry = ? WHERE username = ?", 
+                        (otp_code, otp_expiry, db_username))
+                conn.commit()
+                c.execute("SELECT email FROM users WHERE username = ?", (db_username,))
+                email_row = c.fetchone()
+                conn.close()
+
+                if email_row and email_row[0]:
+                    user_email = email_row[0]
+                    send_otp_email(user_email, otp_code)
+
+                    # Open Email OTP verification window
+                    from ui.email_otp_verify import EmailOTPVerifyWindow
+                    self.email_otp_window = EmailOTPVerifyWindow(db_username, self.open_master_window)
+                    self.email_otp_window.show()
+                    self.close()
+                else:
+                    QMessageBox.critical(self, "Error", "No email found for user.")
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")

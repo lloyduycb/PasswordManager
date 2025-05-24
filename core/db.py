@@ -69,6 +69,7 @@ def init_db():
 
     ensure_favourite_column()
     ensure_otp_column()
+    ensure_email_otp_columns()
 
 
 
@@ -185,6 +186,24 @@ def create_user_table():
     ''')
     conn.commit()
     conn.close()
+
+def ensure_email_otp_columns():
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+
+    # Get all column names in users table
+    c.execute("PRAGMA table_info(users)")
+    columns = [col[1] for col in c.fetchall()]
+
+    # Add missing columns
+    if 'otp_code' not in columns:
+        c.execute("ALTER TABLE users ADD COLUMN otp_code TEXT")
+    if 'otp_expiry' not in columns:
+        c.execute("ALTER TABLE users ADD COLUMN otp_expiry DATETIME")
+
+    conn.commit()
+    conn.close()
+
 
 
 
