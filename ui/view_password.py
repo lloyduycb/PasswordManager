@@ -76,6 +76,9 @@ class ViewPasswordWindow(QWidget):
         self.setLayout(layout)
 
     def load_entry(self):
+        from core.db import update_last_used
+        update_last_used(self.entry_id)  # ✅ log view timestamp
+
         conn = sqlite3.connect("vault.db")
         c = conn.cursor()
         c.execute("SELECT name, email, url, password, notes FROM passwords WHERE id = ?", (self.entry_id,))
@@ -89,6 +92,7 @@ class ViewPasswordWindow(QWidget):
             self.url_input.setText(url)
             self.password_input.setText(decrypt_password(encrypted_pw))
             self.notes_input.setPlainText(notes)
+
 
     def save_entry(self):
         name = self.name_input.text()

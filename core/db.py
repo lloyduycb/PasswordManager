@@ -45,6 +45,7 @@ def init_db():
             password TEXT,
             notes TEXT,
             folder_id INTEGER,
+            last_used DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (folder_id) REFERENCES folders(id)
         )
     ''')
@@ -108,4 +109,20 @@ def fetch_passwords_by_folder(folder_id):
     results = c.fetchall()
     conn.close()
     return results
+
+def update_last_used(entry_id):
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+    c.execute("UPDATE passwords SET last_used = CURRENT_TIMESTAMP WHERE id = ?", (entry_id,))
+    conn.commit()
+    conn.close()
+
+def fetch_recent_passwords(limit=10):
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+    c.execute("SELECT id, name FROM passwords ORDER BY last_used DESC LIMIT ?", (limit,))
+    results = c.fetchall()
+    conn.close()
+    return results
+
 

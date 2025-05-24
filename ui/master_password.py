@@ -21,6 +21,8 @@ class MasterPasswordWindow(QWidget):
         self.input.setEchoMode(QLineEdit.Password)
         
         self.submit = QPushButton("Continue")
+        self.submit.setDefault(True)
+        self.submit.setAutoDefault(True)
         self.submit.clicked.connect(self.verify_master_password)
         
         layout.addWidget(self.label)

@@ -24,6 +24,8 @@ class RegisterWindow(QWidget):
         self.password.setEchoMode(QLineEdit.Password)
 
         self.signup_btn = QPushButton("Sign Up")
+        self.signup_btn.setDefault(True)
+        self.signup_btn.setAutoDefault(True)
         self.signup_btn.clicked.connect(self.register)
 
         layout.addWidget(QLabel("Create Account"))

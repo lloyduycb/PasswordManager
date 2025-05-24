@@ -18,6 +18,8 @@ class LoginWindow(QWidget):
         self.password.setEchoMode(QLineEdit.Password)
 
         self.login_btn = QPushButton("Login")
+        self.login_btn.setDefault(True)
+        self.login_btn.setAutoDefault(True)
         self.login_btn.clicked.connect(self.login)
 
         layout.addWidget(QLabel("Sign in"))

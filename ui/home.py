@@ -1,7 +1,6 @@
-## === ui/home.py ===
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QListWidget,
-    QLineEdit, QListWidgetItem, QStackedLayout, QFrame
+    QLineEdit, QListWidgetItem, QStackedLayout, QFrame, QMessageBox
 )
 from PyQt5.QtCore import Qt
 
@@ -12,6 +11,16 @@ class HomeWindow(QWidget):
         self.setWindowTitle("Password Vault")
         self.setGeometry(400, 150, 1000, 600)
         self.init_ui()
+
+    def open_entry_view(self, item):
+        index = self.vault_list.row(item)
+        from core.db import fetch_all_passwords
+        entry_list = fetch_all_passwords()
+        entry_id = entry_list[index][0]
+
+        from ui.view_password import ViewPasswordWindow
+        self.detail_window = ViewPasswordWindow(entry_id, refresh_callback=self.reload_all)
+        self.detail_window.show()
 
     def init_ui(self):
         # Layouts
@@ -117,12 +126,22 @@ class HomeWindow(QWidget):
         widget = QWidget()
         layout = QVBoxLayout()
         layout.addWidget(QLabel("Recent"))
+
         self.recent_list = QListWidget()
-        for i in range(8):
-            QListWidgetItem(f"Sample entry {i+1}", self.recent_list)
+
+        from core.db import fetch_recent_passwords
+        recent_entries = fetch_recent_passwords()
+        self.recent_entries = recent_entries  # store IDs to track clicks
+
+        for entry_id, name in recent_entries:
+            QListWidgetItem(name, self.recent_list)
+
+        self.recent_list.itemClicked.connect(self.open_recent_entry)
+
         layout.addWidget(self.recent_list)
         widget.setLayout(layout)
         return widget
+
 
     def build_vault_view(self):
         from core.db import fetch_all_passwords  # Make sure this exists
@@ -194,7 +213,7 @@ class HomeWindow(QWidget):
             from ui.add_password import AddPasswordWindow
             self.add_window = AddPasswordWindow()
             self.add_window.setAttribute(Qt.WA_DeleteOnClose)
-            self.add_window.destroyed.connect(self.reload_vault)
+            self.add_window.destroyed.connect(self.reload_all)
             self.add_window.show()
 
         elif self.current_view == "Folders":
@@ -251,5 +270,28 @@ class HomeWindow(QWidget):
         folders = fetch_folders()
         for _, name in folders:
             QListWidgetItem(name, self.folder_list)
+
+    def reload_recent_view(self):
+        from core.db import fetch_recent_passwords
+
+        self.recent_list.clear()
+        recent_entries = fetch_recent_passwords()
+        self.recent_entries = recent_entries
+
+        for entry_id, name in recent_entries:
+            QListWidgetItem(name, self.recent_list)
+
+    def reload_all(self):
+        self.reload_vault()
+        self.reload_recent_view()
+
+    def open_recent_entry(self, item):
+        index = self.recent_list.row(item)
+        entry_id = self.recent_entries[index][0]
+
+        from ui.view_password import ViewPasswordWindow
+        self.detail_window = ViewPasswordWindow(entry_id, refresh_callback=self.reload_all)
+        self.detail_window.show()
+
 
 
