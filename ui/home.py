@@ -2,15 +2,23 @@ from PyQt5.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QListWidget,
     QLineEdit, QListWidgetItem, QStackedLayout, QFrame, QMessageBox
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer, QEvent, QTime
+from ui.master_password import MasterPasswordWindow
 
 class HomeWindow(QWidget):
-    def __init__(self):
+    def __init__(self, username):
         super().__init__()
+        self.username = username
         self.current_view = "All Items"
         self.setWindowTitle("Password Vault")
         self.setGeometry(400, 150, 1000, 600)
         self.init_ui()
+        self.lock_timer = QTimer()
+        self.lock_timer.timeout.connect(self.auto_lock)
+        self.inactivity_timeout = 2 * 60 * 1000 
+        self.lock_timer.start(self.inactivity_timeout)
+        self.installEventFilter(self)  # Listen to mouse/keyboard events
+
 
     def open_entry_view(self, item):
         index = self.vault_list.row(item)
@@ -391,6 +399,40 @@ class HomeWindow(QWidget):
         self.fav_entries = fetch_favourites()
         for entry_id, name in self.fav_entries:
             QListWidgetItem(name, self.fav_list)
+
+    from PyQt5.QtCore import QTime
+
+    def eventFilter(self, obj, event):
+        # Avoid resetting timer on every minor mouse movement
+        if not hasattr(self, 'last_event_time'):
+            self.last_event_time = QTime.currentTime()
+
+        now = QTime.currentTime()
+        ms_since_last = self.last_event_time.msecsTo(now)
+
+        if event.type() in [QEvent.MouseMove, QEvent.KeyPress]:
+            if ms_since_last > 1000:  # Only reset timer every 1 second max
+                print("Resetting inactivity timer")  # For testing
+                self.lock_timer.start(self.inactivity_timeout)  
+                self.last_event_time = now
+
+        return super().eventFilter(obj, event)
+
+    
+    def auto_lock(self):
+        print("Auto-lock triggered")
+        self.lock_timer.stop()
+        self.close()
+
+        # Relaunch Master Password Window
+        
+        self.master_pw_window = MasterPasswordWindow(self.get_current_username())
+        self.master_pw_window.show()
+    
+    def get_current_username(self):
+        return self.username if hasattr(self, 'username') else ""
+
+
 
     
 

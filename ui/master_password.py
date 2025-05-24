@@ -100,6 +100,6 @@ class MasterPasswordWindow(QWidget):
 
     def open_home(self):
         from ui.home import HomeWindow
-        self.home = HomeWindow()
+        self.home = HomeWindow(self.username)
         self.home.show()
         self.close()
