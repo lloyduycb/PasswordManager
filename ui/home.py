@@ -95,7 +95,7 @@ class HomeWindow(QWidget):
             "All Items": self.build_recent_view(),
             "Vault": self.build_vault_view(),
             "Folders": self.build_folder_view(),
-            "Favorites": self.build_label("Favorites view coming soon"),
+            "Favorites": self.build_favourites_view(),
             "Notifications": self.build_label("Notifications view coming soon"),
             "Tools": self.build_generator_view()
         }
@@ -284,6 +284,7 @@ class HomeWindow(QWidget):
     def reload_all(self):
         self.reload_vault()
         self.reload_recent_view()
+        self.reload_favourites()
 
     def open_recent_entry(self, item):
         index = self.recent_list.row(item)
@@ -358,6 +359,43 @@ class HomeWindow(QWidget):
         clipboard.setText(self.output_box.toPlainText())
 
         QMessageBox.information(self, "Copied", "Password copied to clipboard!")
+    
+    def build_favourites_view(self):
+        from core.db import fetch_favourites
+
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel("Favourites"))
+
+        self.fav_list = QListWidget()
+        self.fav_entries = fetch_favourites()
+        for entry_id, name in self.fav_entries:
+            QListWidgetItem(name, self.fav_list)
+
+        self.fav_list.itemClicked.connect(self.open_favourite_entry)
+        layout.addWidget(self.fav_list)
+        widget.setLayout(layout)
+        return widget
+    
+    def open_favourite_entry(self, item):
+        index = self.fav_list.row(item)
+        entry_id = self.fav_entries[index][0]
+
+        from ui.view_password import ViewPasswordWindow
+        self.detail_window = ViewPasswordWindow(entry_id, refresh_callback=self.reload_all)
+        self.detail_window.show()
+
+    def reload_favourites(self):
+        from core.db import fetch_favourites
+        self.fav_list.clear()
+        self.fav_entries = fetch_favourites()
+        for entry_id, name in self.fav_entries:
+            QListWidgetItem(name, self.fav_list)
+
+    
+
+
+
 
 
 
