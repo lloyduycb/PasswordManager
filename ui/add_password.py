@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QLineEdit, QTextEdit, QPushButton, QMessageBox
-from PyQt5.QtCore import QCombobox
+from PyQt5.QtCore import QComboBox
 from core.db import insert_password_entry
-from core.crypto import encrypt_password  # Assuming you use crypto.py to encrypt
+from core.crypto import encrypt_password, decrypt_password
+
 
 class AddPasswordWindow(QWidget):
     def __init__(self):

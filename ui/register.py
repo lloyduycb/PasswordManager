@@ -1,7 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox
 from core import db
-from ui.verify_email import EmailVerificationWindow
-from ui.login import LoginWindow  
+import bcrypt
 import random
 import datetime
 import sqlite3
@@ -36,8 +35,8 @@ class RegisterWindow(QWidget):
         self.setLayout(layout)
 
     def register(self):
-        uname = self.username.text()
-        email = self.email.text()
+        uname = self.username.text().strip()
+        email = self.email.text().strip()
         pwd = self.password.text()
 
         if not uname or not email or not pwd:
@@ -45,9 +44,8 @@ class RegisterWindow(QWidget):
             return
 
         try:
-            # Hash the user's password with bcrypt before storing
             hashed_pwd = bcrypt.hashpw(pwd.encode(), bcrypt.gensalt())
-            
+
             conn = sqlite3.connect("vault.db")
             c = conn.cursor()
             c.execute("""
@@ -58,11 +56,17 @@ class RegisterWindow(QWidget):
             conn.close()
 
             QMessageBox.information(self, "Success", "Account created successfully!")
-            
-            # Redirect to login page instead of master password
-            self.login_window = LoginWindow()
-            self.login_window.show()
+
+            # ✅ Go to master password setup
+            from ui.master_password import MasterPasswordWindow
+            self.master_window = MasterPasswordWindow(uname, from_register=True)
+            self.master_window.show()
             self.close()
 
         except sqlite3.IntegrityError:
             QMessageBox.warning(self, "Error", "Username or email already exists.")
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            QMessageBox.critical(self, "Error", f"Unexpected error:\n{str(e)}")

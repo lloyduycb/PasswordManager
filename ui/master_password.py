@@ -2,12 +2,14 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox
 import sqlite3
 import bcrypt
-from ui.home import HomeWindow
+
 
 class MasterPasswordWindow(QWidget):
-    def __init__(self, username):
+    def __init__(self, username, from_register=False):
         super().__init__()
         self.username = username
+        self.from_register = from_register
+
         self.setWindowTitle("Master Password")
         self.setGeometry(500, 200, 300, 200)  # Slightly taller for better layout
         
@@ -62,7 +64,7 @@ class MasterPasswordWindow(QWidget):
                 if isinstance(hashed_pw, str):
                     hashed_pw = hashed_pw.encode('utf-8')
 
-                if bcrypt.checkpw(pw.encode(), hashed_pw):
+                if bcrypt.checkpw(password.encode(), hashed_pw):
                     self.open_home()
                     return
 
@@ -70,7 +72,7 @@ class MasterPasswordWindow(QWidget):
 
         else:
             # Create new master password
-            if len(password) < 8:
+            if len(password) < 6:
                 QMessageBox.warning(self, "Weak Password", "Master password must be at least 8 characters.")
                 return
                 
@@ -79,14 +81,22 @@ class MasterPasswordWindow(QWidget):
             conn = sqlite3.connect("vault.db")
             c = conn.cursor()
             c.execute("INSERT INTO master_password (username, password_hash) VALUES (?, ?)", (self.username, hashed))
-
             conn.commit()
             conn.close()
             
             QMessageBox.information(self, "Success", "Master password set.")
-            self.open_home()
+            
+            if self.from_register:
+                from ui.login import LoginWindow
+                self.login_window = LoginWindow()
+                self.login_window.show()
+            else:
+                self.open_home()
+
+            self.close()
 
     def open_home(self):
+        from ui.home import HomeWindow
         self.home = HomeWindow()
         self.home.show()
         self.close()

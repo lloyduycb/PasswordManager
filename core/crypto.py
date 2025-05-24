@@ -1,14 +1,19 @@
 from cryptography.fernet import Fernet
-import base64
 import os
 
-def get_key():
-    return base64.urlsafe_b64encode(os.urandom(32))
+def get_or_create_key():
+    if not os.path.exists("vault.key"):
+        with open("vault.key", "wb") as f:
+            f.write(Fernet.generate_key())
+    with open("vault.key", "rb") as f:
+        return f.read()
 
-def encrypt_password(password: str, key: bytes) -> str:
+KEY = get_or_create_key()
+
+def encrypt_password(password: str, key: bytes = KEY) -> str:
     f = Fernet(key)
     return f.encrypt(password.encode()).decode()
 
-def decrypt_password(encrypted: str, key: bytes) -> str:
+def decrypt_password(encrypted: str, key: bytes = KEY) -> str:
     f = Fernet(key)
     return f.decrypt(encrypted.encode()).decode()

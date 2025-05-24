@@ -1,7 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox
 import sqlite3
 import datetime
-from ui.master_password import MasterPasswordWindow
 
 class EmailVerificationWindow(QWidget):
     def __init__(self, username):
@@ -50,6 +49,7 @@ class EmailVerificationWindow(QWidget):
             QMessageBox.warning(self, "Incorrect", "Invalid verification code.")
 
     def open_master_password(self):
+        from ui.master_password import MasterPasswordWindow
         self.master_window = MasterPasswordWindow(self.username)
         self.master_window.show()
         self.close()

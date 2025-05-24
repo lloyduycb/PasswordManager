@@ -1,8 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox
 import sqlite3
-import bcrypt  # also missing
-from ui.master_password import MasterPasswordWindow
-from ui.home import HomeWindow
+import bcrypt 
 
 class LoginWindow(QWidget):
     def __init__(self):
@@ -56,6 +54,9 @@ class LoginWindow(QWidget):
             if not bcrypt.checkpw(password.encode(), db_password):
                 QMessageBox.warning(self, "Error", "Incorrect password.")
                 return
+            
+            from ui.master_password import MasterPasswordWindow
+            # If login is successful, open the master password window
 
             # Keep a reference to the master window
             self.master_window = MasterPasswordWindow(db_username)
@@ -69,6 +70,7 @@ class LoginWindow(QWidget):
             print(f"Error during login: {e}")  # Check console for this
 
     def open_home(self):
+        from ui.home import HomeWindow
         self.home = HomeWindow()
         self.home.show()
         self.close()
