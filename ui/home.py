@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QListWidget,
-    QLineEdit, QListWidgetItem, QStackedLayout, QFrame, QMessageBox, QComboBox
+    QLineEdit, QListWidgetItem, QStackedLayout, QFrame, QMessageBox, QComboBox, QDialog
 )
 from PyQt5.QtCore import Qt, QTimer, QEvent, QTime
 from ui.master_password import MasterPasswordWindow
@@ -518,10 +518,10 @@ class HomeWindow(QWidget):
         
 
     def add_new_folder(self):
-        from PyQt5.QtWidgets import QInputDialog
-        name, ok = QInputDialog.getText(self, "New Folder", "Folder name:")
-
-        if ok and name:
+        from ui.folder_dialog import FolderDialog  
+        dialog = FolderDialog(self)
+        if dialog.exec_() == QDialog.Accepted:
+            name = dialog.folder_name
             from core.db import insert_folder
             try:
                 insert_folder(name)
@@ -531,6 +531,7 @@ class HomeWindow(QWidget):
                 import traceback
                 traceback.print_exc()
                 QMessageBox.warning(self, "Error", f"Could not add folder:\n{str(e)}")
+
 
 
     def reload_folders(self):
