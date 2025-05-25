@@ -141,13 +141,9 @@ class RegisterWindow(QWidget):
             QMessageBox.information(self, "Success", "Account created successfully!")
 
             from ui.otp_setup import OTPSetupWindow
-            self.otp_window = OTPSetupWindow(uname, otp_secret)
+            self.otp_window = OTPSetupWindow(uname, otp_secret, callback=lambda: self.launch_master_setup(uname))
             self.otp_window.show()
 
-            from ui.master_password import MasterPasswordWindow
-            self.master_window = MasterPasswordWindow(uname, from_register=True)
-            self.master_window.show()
-            self.close()
 
         except sqlite3.IntegrityError:
             QMessageBox.warning(self, "Error", "Username or email already exists.")
@@ -161,3 +157,10 @@ class RegisterWindow(QWidget):
         self.login_window = LoginWindow()
         self.login_window.show()
         self.close()
+    
+    def launch_master_setup(self):
+        from ui.master_password import MasterPasswordWindow
+        self.master_window = MasterPasswordWindow(self.username, from_register=True)
+        self.master_window.show()
+        self.close()
+

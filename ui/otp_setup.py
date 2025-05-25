@@ -1,15 +1,17 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton
-from PyQt5.QtGui import QPixmap, QFont
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
 import pyotp
 import qrcode
 from io import BytesIO
 
 class OTPSetupWindow(QWidget):
-    def __init__(self, username, otp_secret):
+    def __init__(self, username, otp_secret, callback=None):
         super().__init__()
         self.username = username
         self.otp_secret = otp_secret
+        self.callback = callback  # ✅ New argument for post-Done logic
+
         self.setWindowTitle("Set Up Two-Factor Authentication")
         self.setGeometry(550, 250, 360, 460)
         self.init_ui()
@@ -47,13 +49,12 @@ class OTPSetupWindow(QWidget):
         title.setStyleSheet("font-weight: bold;")
         layout.addWidget(title)
 
-        # Generate URI
+        # Generate TOTP URI and QR Code
         totp_uri = pyotp.totp.TOTP(self.otp_secret).provisioning_uri(
             name=self.username,
             issuer_name="Vault Password Manager"
         )
 
-        # Generate QR Code in-memory
         qr = qrcode.make(totp_uri)
         buffer = BytesIO()
         qr.save(buffer, format="PNG")
@@ -65,7 +66,7 @@ class OTPSetupWindow(QWidget):
         qr_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(qr_label)
 
-        layout.addSpacing(10)
+        # Manual Key Display
         manual_label = QLabel("Or enter this key manually:")
         manual_label.setStyleSheet("color: #444;")
         manual_label.setAlignment(Qt.AlignCenter)
@@ -76,8 +77,14 @@ class OTPSetupWindow(QWidget):
         key_display.setAlignment(Qt.AlignCenter)
         layout.addWidget(key_display)
 
+        # Done button
         done_btn = QPushButton("Done")
-        done_btn.clicked.connect(self.close)
+        done_btn.clicked.connect(self.finish)  # ✅ Calls method instead of just close
         layout.addWidget(done_btn, alignment=Qt.AlignCenter)
 
         self.setLayout(layout)
+
+    def finish(self):
+        self.close()
+        if self.callback:
+            self.callback()  # ✅ Launch master password setup
