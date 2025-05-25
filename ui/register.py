@@ -141,8 +141,9 @@ class RegisterWindow(QWidget):
             QMessageBox.information(self, "Success", "Account created successfully!")
 
             from ui.otp_setup import OTPSetupWindow
-            self.otp_window = OTPSetupWindow(uname, otp_secret, callback=lambda: self.launch_master_setup(uname))
+            self.otp_window = OTPSetupWindow(uname, otp_secret, callback=self.launch_master_setup)
             self.otp_window.show()
+
 
 
         except sqlite3.IntegrityError:
