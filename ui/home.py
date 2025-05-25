@@ -104,8 +104,8 @@ class HomeWindow(QWidget):
             "Vault": self.build_vault_view(),
             "Folders": self.build_folder_view(),
             "Favorites": self.build_favourites_view(),
-            "Notifications": self.build_label("Notifications view coming soon"),
-            "Tools": self.build_generator_view()
+            "Notifications": self.build_notifications_view(),
+            "Password Generator": self.build_generator_view()
         }
 
         for v in self.views.values():
@@ -250,8 +250,9 @@ class HomeWindow(QWidget):
         entry_id = entry_list[index][0]
 
         from ui.view_password import ViewPasswordWindow
-        self.detail_window = ViewPasswordWindow(entry_id, refresh_callback=self.reload_vault)
+        self.detail_window = ViewPasswordWindow(entry_id, self.username, refresh_callback=self.reload_vault)
         self.detail_window.show()
+        
 
     def add_new_folder(self):
         from PyQt5.QtWidgets import QInputDialog
@@ -299,7 +300,7 @@ class HomeWindow(QWidget):
         entry_id = self.recent_entries[index][0]
 
         from ui.view_password import ViewPasswordWindow
-        self.detail_window = ViewPasswordWindow(entry_id, refresh_callback=self.reload_all)
+        self.detail_window = ViewPasswordWindow(entry_id, self.username, refresh_callback=self.reload_all)
         self.detail_window.show()
 
     def build_generator_view(self):
@@ -390,7 +391,7 @@ class HomeWindow(QWidget):
         entry_id = self.fav_entries[index][0]
 
         from ui.view_password import ViewPasswordWindow
-        self.detail_window = ViewPasswordWindow(entry_id, refresh_callback=self.reload_all)
+        self.detail_window = ViewPasswordWindow(entry_id, self.username, refresh_callback=self.reload_all)
         self.detail_window.show()
 
     def reload_favourites(self):
@@ -431,6 +432,26 @@ class HomeWindow(QWidget):
     
     def get_current_username(self):
         return self.username if hasattr(self, 'username') else ""
+    
+    def build_notifications_view(self):
+        from core.db import fetch_notifications
+
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel("Notifications"))
+
+        self.notif_list = QListWidget()
+        notifications = fetch_notifications(self.username)
+
+        for msg, ts in notifications:
+            display_text = f"{msg} ({ts})"
+            item = QListWidgetItem(display_text)
+            self.notif_list.addItem(item)
+
+        layout.addWidget(self.notif_list)
+        widget.setLayout(layout)
+        return widget
+
 
 
 

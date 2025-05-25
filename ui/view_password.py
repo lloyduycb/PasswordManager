@@ -8,9 +8,10 @@ from core.crypto import decrypt_password, encrypt_password
 from core.db import insert_password_entry  # Optional if you reuse db functions
 
 class ViewPasswordWindow(QWidget):
-    def __init__(self, entry_id, refresh_callback=None):
+    def __init__(self, entry_id, username, refresh_callback=None):
         super().__init__()
         self.entry_id = entry_id
+        self.username = username
         self.refresh_callback = refresh_callback
         self.setWindowTitle("View / Edit Password")
         self.setGeometry(600, 250, 450, 400)
@@ -100,6 +101,10 @@ class ViewPasswordWindow(QWidget):
 
             self.fav_btn.setChecked(bool(is_fav))
             self.fav_btn.setText("⭐ Unfavourite" if is_fav else "⭐ Mark as Favourite")
+            from core.db import log_notification
+            log_notification(self.username, f"Viewed password: {name}")
+
+
 
 
     def save_entry(self):

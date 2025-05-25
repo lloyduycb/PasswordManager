@@ -70,7 +70,7 @@ def init_db():
     ensure_favourite_column()
     ensure_otp_column()
     ensure_email_otp_columns()
-
+    create_notifications_table()
 
 
 def insert_password_entry(name, email, url, password, notes, folder_id=None):
@@ -90,6 +90,14 @@ def insert_password_entry(name, email, url, password, notes, folder_id=None):
     finally:
         if conn:
             conn.close()
+
+def log_notification(username, message):
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+    c.execute("INSERT INTO notifications (username, message) VALUES (?, ?)", (username, message))
+    conn.commit()
+    conn.close()
+
 
 def fetch_all_passwords():
     conn = sqlite3.connect("vault.db")
@@ -136,6 +144,20 @@ def fetch_recent_passwords(limit=10):
     results = c.fetchall()
     conn.close()
     return results
+
+def fetch_notifications(username, limit=50):
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+    c.execute("""
+        SELECT message, timestamp FROM notifications
+        WHERE username = ?
+        ORDER BY timestamp DESC
+        LIMIT ?
+    """, (username, limit))
+    result = c.fetchall()
+    conn.close()
+    return result
+
 
 def ensure_favourite_column():
     conn = sqlite3.connect("vault.db")
@@ -203,6 +225,21 @@ def ensure_email_otp_columns():
 
     conn.commit()
     conn.close()
+
+def create_notifications_table():
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            message TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
 
 
 
