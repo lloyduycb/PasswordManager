@@ -713,10 +713,10 @@ class HomeWindow(QWidget):
         length = self.length_input.value()
         password = generator_func(
             length=length,
-            use_upper=self.upper_cb.isChecked(),
-            use_lower=self.lower_cb.isChecked(),
-            use_digits=self.digits_cb.isChecked(),
-            use_symbols=self.symbols_cb.isChecked()
+            use_upper=self.upper_btn.isChecked(),
+            use_lower=self.lower_btn.isChecked(),
+            use_digits=self.digits_btn.isChecked(),
+            use_symbols=self.symbols_btn.isChecked()
         )
         self.output_box.setText(password)
 
