@@ -226,10 +226,15 @@ class HomeWindow(QWidget):
 
         # Title
         title = QLabel("Recent")
-        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #222052; margin-bottom: 10px;")
+        title.setStyleSheet("""
+            font-size: 20px;
+            font-weight: bold;
+            color: #222052;
+            margin-bottom: 14px;
+        """)
         layout.addWidget(title)
 
-        # Recent list
+        # List
         self.recent_list = QListWidget()
         self.recent_list.setStyleSheet("""
             QListWidget {
@@ -249,14 +254,16 @@ class HomeWindow(QWidget):
         self.recent_entries = fetch_recent_passwords()
 
         for entry in self.recent_entries:
-            if len(entry) < 2:
+            if len(entry) < 4:
                 continue
-            entry_id, name = entry
+
+            entry_id, name, modified, used = entry
 
             # Row widget
             row_widget = QWidget()
+            row_widget.setFixedHeight(45)  # Or whatever height you prefer
             row_layout = QHBoxLayout(row_widget)
-            row_layout.setContentsMargins(20, 12, 20, 12)  # ✅ top-bottom padding increased
+            row_layout.setContentsMargins(20, 12, 20, 12)
             row_layout.setSpacing(10)
             row_widget.setStyleSheet("""
                 QWidget {
@@ -265,28 +272,23 @@ class HomeWindow(QWidget):
                 }
             """)
 
-            # Font
-            font = QFont("Segoe UI", 10)
-            font.setBold(True)
-
-            # Labels
+            # Text label
             name_label = QLabel(name if name else "(Unnamed)")
-            name_label.setFont(QFont("Segoe UI", 10, QFont.Bold))
-            name_label.setStyleSheet("color: #222052; background: transparent;")
+            name_label.setFont(QFont("Segoe UI", 8, QFont.Bold))
+            name_label.setStyleSheet("color: #222052;")
 
-
-            icon_label = QLabel("✏️")
-            icon_label.setFont(QFont("Segoe UI Emoji", 12))
+            # Icon label
+            icon_label = QLabel("➡️")  # Emoji or Unicode arrow → 🡺
+            icon_label.setFont(QFont("Segoe UI Emoji", 10))
+            icon_label.setStyleSheet("color: #222052;")
             icon_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
-            icon_label.setStyleSheet("color: #222052; padding-left: 10px;")
 
             row_layout.addWidget(name_label)
             row_layout.addStretch()
             row_layout.addWidget(icon_label)
 
-            # Set row height explicitly (prevents cropping)
             item = QListWidgetItem()
-            item.setSizeHint(QSize(0, 44))  # ✅ Adjust row height here
+            item.setSizeHint(QSize(0, 54))  # Bigger row
             self.recent_list.addItem(item)
             self.recent_list.setItemWidget(item, row_widget)
 

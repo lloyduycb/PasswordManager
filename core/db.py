@@ -148,10 +148,17 @@ def update_last_used(entry_id):
 def fetch_recent_passwords(limit=10):
     conn = sqlite3.connect("vault.db")
     c = conn.cursor()
-    c.execute("SELECT id, name FROM passwords ORDER BY last_used DESC LIMIT ?", (limit,))
+    c.execute("""
+        SELECT id, name, last_modified, last_used
+        FROM passwords
+        WHERE last_used IS NOT NULL
+        ORDER BY datetime(last_used) DESC
+        LIMIT ?
+    """, (limit,))
     results = c.fetchall()
     conn.close()
     return results
+
 
 def fetch_notifications(username, limit=50):
     conn = sqlite3.connect("vault.db")
