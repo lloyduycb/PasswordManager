@@ -249,8 +249,14 @@ class ViewPasswordWindow(QWidget):
     def toggle_favourite(self):
         from core.db import set_favourite
         is_checked = self.fav_btn.isChecked()
+        
+        # Update favourite in database
         set_favourite(self.entry_id, is_checked)
+        
+        # Update button label
         self.fav_btn.setText("⭐ Unfavourite" if is_checked else "⭐ Mark as Favourite")
-        if self.refresh_callback:
+        
+        # Trigger refresh callback (e.g., reload_all from HomeWindow)
+        if hasattr(self, 'refresh_callback') and callable(self.refresh_callback):
             self.refresh_callback()
 

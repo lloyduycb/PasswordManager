@@ -554,8 +554,12 @@ class HomeWindow(QWidget):
         recent_entries = fetch_recent_passwords()
         self.recent_entries = recent_entries
 
-        for entry_id, name in recent_entries:
-            QListWidgetItem(name, self.recent_list)
+        for entry in recent_entries:
+            if len(entry) >= 2:
+                entry_id, name = entry[0], entry[1]
+                item = QListWidgetItem(name if name else "(Unnamed)")
+                self.recent_list.addItem(item)
+
 
     def reload_all(self):
         self.reload_vault()
