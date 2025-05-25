@@ -313,6 +313,7 @@ class HomeWindow(QWidget):
         arrange_label.setStyleSheet("font-size: 12px;")
         sort_dropdown = QComboBox()
         sort_dropdown.addItems(["Name", "Last Modified", "Last Used"])
+        sort_dropdown.currentTextChanged.connect(self.sort_vault_entries)
         sort_dropdown.setStyleSheet("QComboBox { border: none; background: transparent; }")
         header_layout.addWidget(arrange_label)
         header_layout.addWidget(sort_dropdown)
@@ -833,6 +834,46 @@ class HomeWindow(QWidget):
             score += 15
 
         return min(score, 100)
+    def sort_vault_entries(self, method):
+        from core.db import fetch_all_passwords_sorted
+
+        if hasattr(self, "current_folder_id") and self.current_folder_id:
+            from core.db import fetch_passwords_by_folder_sorted
+            passwords = fetch_passwords_by_folder_sorted(self.current_folder_id, method)
+        else:
+            passwords = fetch_all_passwords_sorted(method)
+
+        self.vault_list.clear()
+        self.vault_entries = passwords
+
+        for entry in passwords:
+            if len(entry) < 4:
+                continue
+
+            entry_id, name, modified, used = entry
+
+            # Format date strings
+            modified_str = "-"
+            used_str = "-"
+
+            if modified:
+                try:
+                    from datetime import datetime
+                    modified_dt = datetime.strptime(modified, "%Y-%m-%d %H:%M:%S")
+                    modified_str = modified_dt.strftime("%d %b %Y")
+                except:
+                    pass
+
+            if used:
+                try:
+                    used_dt = datetime.strptime(used, "%Y-%m-%d %H:%M:%S")
+                    used_str = used_dt.strftime("%d %b %Y")
+                except:
+                    pass
+
+            item_text = f"{name:<20}   {modified_str:<15}   {used_str:<15}"
+            self.vault_list.addItem(QListWidgetItem(item_text))
+
 
 
 

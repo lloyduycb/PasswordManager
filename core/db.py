@@ -304,6 +304,42 @@ def ensure_last_modified_column():
         conn.commit()
     conn.close()
 
+def fetch_all_passwords_sorted(method="Name"):
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+
+    order_map = {
+        "Name": "name COLLATE NOCASE",
+        "Last Modified": "last_modified DESC",
+        "Last Used": "last_used DESC"
+    }
+
+    order_by = order_map.get(method, "name COLLATE NOCASE")
+    c.execute(f"SELECT id, name, last_modified, last_used FROM passwords ORDER BY {order_by}")
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def fetch_passwords_by_folder_sorted(folder_id, method="Name"):
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+
+    order_map = {
+        "Name": "name COLLATE NOCASE",
+        "Last Modified": "last_modified DESC",
+        "Last Used": "last_used DESC"
+    }
+
+    order_by = order_map.get(method, "name COLLATE NOCASE")
+    c.execute(f"""
+        SELECT id, name, last_modified, last_used
+        FROM passwords
+        WHERE folder_id = ?
+        ORDER BY {order_by}
+    """, (folder_id,))
+    rows = c.fetchall()
+    conn.close()
+    return rows
 
 
 

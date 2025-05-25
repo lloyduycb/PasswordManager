@@ -110,7 +110,7 @@ class OTPVerifyWindow(QWidget):
             otp_secret = result[0]
             totp = pyotp.TOTP(otp_secret)
             if totp.verify(entered_code):
-                QMessageBox.information(self, "Success", "OTP Verified!")
+                # QMessageBox.information(self, "Success", "OTP Verified!")
                 self.close()
                 self.on_success()
             else:
