@@ -141,8 +141,14 @@ class RegisterWindow(QWidget):
             QMessageBox.information(self, "Success", "Account created successfully!")
 
             from ui.otp_setup import OTPSetupWindow
+
+            # Close the register window first
+            self.close()
+
+            # Then open the OTP setup window
             self.otp_window = OTPSetupWindow(uname, otp_secret, callback=self.launch_master_setup)
             self.otp_window.show()
+
 
 
 
@@ -161,7 +167,7 @@ class RegisterWindow(QWidget):
     
     def launch_master_setup(self):
         from ui.master_password import MasterPasswordWindow
-        self.master_window = MasterPasswordWindow(self.username, from_register=True)
+        self.master_window = MasterPasswordWindow(self.username.text(), from_register=True)
         self.master_window.show()
         self.close()
 

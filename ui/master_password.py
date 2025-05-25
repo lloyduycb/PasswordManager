@@ -167,7 +167,7 @@ class MasterPasswordWindow(QWidget):
             msg_box.setIcon(QMessageBox.Information)
             msg_box.setWindowTitle("Success")
             msg_box.setText("Master password set.")
-            msg_box.setStandardButtons(QMessageBox.NoButton)  # Prevent blocking
+            msg_box.setStandardButtons(QMessageBox.Ok)
             msg_box.setStyleSheet("""
                 QMessageBox {
                     background-color: #222052;
@@ -177,21 +177,30 @@ class MasterPasswordWindow(QWidget):
                 QLabel {
                     color: #EFE9E1;
                 }
+                QPushButton {
+                    color: #EFE9E1;
+                    background-color: #222052;
+                    border: none;
+                    padding: 5px 12px;
+                }
+                QPushButton:hover {
+                    background-color: #000000;
+                }
             """)
-            msg_box.show()
 
-            # Auto-close message box and THEN proceed
-            def proceed_after_message():
-                msg_box.close()
-                if self.from_register:
-                    from ui.login import LoginWindow
-                    self.login_window = LoginWindow()
-                    self.login_window.show()
-                else:
-                    self.open_home()
-                self.close()
+            # Show and wait for user to press OK
+            msg_box.exec_()
 
-            QTimer.singleShot(1500, proceed_after_message)
+            # Then proceed
+            if self.from_register:
+                from ui.login import LoginWindow
+                self.login_window = LoginWindow()
+                self.login_window.show()
+            else:
+                self.open_home()
+
+            self.close()
+
 
 
     def open_home(self):
