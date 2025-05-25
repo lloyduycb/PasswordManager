@@ -71,18 +71,19 @@ def init_db():
     ensure_otp_column()
     ensure_email_otp_columns()
     create_notifications_table()
+    ensure_expiry_column()
 
 
-def insert_password_entry(name, email, url, password, notes, folder_id=None):
+def insert_password_entry(name, email, url, password, notes, folder_id, expiry_date=None):
     conn = None
     try:
         conn = sqlite3.connect("vault.db")
         c = conn.cursor()
         c.execute("""
             INSERT INTO passwords 
-            (name, email, url, password, notes, folder_id) 
+            (name, email, url, password, notes, folder_id, expiry_date) 
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (name, email, url, password, notes, folder_id))
+        """, (name, email, url, password, notes, folder_id, expiry_date))
         conn.commit()
     except sqlite3.Error as e:
         print(f"Database error: {e}")
@@ -240,6 +241,43 @@ def create_notifications_table():
     conn.commit()
     conn.close()
 
+def ensure_expiry_column():
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+
+    # Check if 'expiry_date' column exists
+    c.execute("PRAGMA table_info(passwords)")
+    columns = [col[1] for col in c.fetchall()]
+    if 'expiry_date' not in columns:
+        c.execute("ALTER TABLE passwords ADD COLUMN expiry_date DATE")
+        conn.commit()
+
+    conn.close()
+
+def get_expiring_passwords(username):
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+    today = datetime.date.today()
+    warning_day = today + datetime.timedelta(days=7)
+
+    c.execute("""
+        SELECT name, expiry_date FROM passwords
+        WHERE expiry_date IS NOT NULL
+    """)
+    rows = c.fetchall()
+    conn.close()
+
+    results = []
+    for name, date_str in rows:
+        try:
+            expiry = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+            if expiry < today:
+                results.append((name, "expired"))
+            elif expiry <= warning_day:
+                results.append((name, "soon"))
+        except Exception:
+            continue
+    return results
 
 
 

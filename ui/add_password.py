@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QLineEdit, QTextEdit, QPushButton, QMessageBox, QComboBox
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QLineEdit, QTextEdit, QPushButton, QMessageBox, QComboBox, QDateEdit
+from PyQt5.QtCore import QDate
 from core.db import insert_password_entry, fetch_folders
 from core.crypto import encrypt_password
 from core.utils import get_password_strength
@@ -28,6 +29,11 @@ class AddPasswordWindow(QWidget):
 
         self.password_input.setPlaceholderText("Password")
 
+        self.expiry_input = QDateEdit()
+        self.expiry_input.setCalendarPopup(True)
+        self.expiry_input.setDisplayFormat("yyyy-MM-dd")
+        self.expiry_input.setDate(QDate.currentDate())  
+
         self.notes_input = QTextEdit()
         self.notes_input.setPlaceholderText("Notes...")
 
@@ -55,6 +61,8 @@ class AddPasswordWindow(QWidget):
         layout.addWidget(self.password_input)
         layout.addWidget(self.strength_label)
         layout.addWidget(self.notes_input)
+        layout.addWidget(QLabel("Expiry Date (optional)"))
+        layout.addWidget(self.expiry_input)
         layout.addWidget(self.submit_btn)
 
         self.setLayout(layout)
@@ -78,7 +86,16 @@ class AddPasswordWindow(QWidget):
             if folder_name != "None":
                 folder_id = next((fid for fid, name in self.folders if name == folder_name), None)
 
-            insert_password_entry(name, email, url, password, notes, folder_id)
+            from PyQt5.QtCore import QDate
+
+            expiry_qdate = self.expiry_input.date()
+            expiry_date = expiry_qdate.toString("yyyy-MM-dd")
+
+            if expiry_qdate == QDate.currentDate():
+                expiry_date = None
+
+
+            insert_password_entry(name, email, url, password, notes, folder_id, expiry_date)
             QMessageBox.information(self, "Saved", "Password entry added.")
             self.close()
 

@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QLineEdit, QTextEdit, QPushButton,
-    QVBoxLayout, QHBoxLayout, QMessageBox, QApplication
+    QVBoxLayout, QHBoxLayout, QMessageBox, QApplication, QDateEdit
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QDate
 import sqlite3
 from core.crypto import decrypt_password, encrypt_password
 from core.db import insert_password_entry  # Optional if you reuse db functions
@@ -28,6 +28,10 @@ class ViewPasswordWindow(QWidget):
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.Password)
         self.notes_input = QTextEdit()
+        self.expiry_input = QDateEdit()
+        self.expiry_input.setCalendarPopup(True)
+        self.expiry_input.setDisplayFormat("yyyy-MM-dd")
+
 
         # Row: Email + Copy
         email_layout = QHBoxLayout()
@@ -63,6 +67,9 @@ class ViewPasswordWindow(QWidget):
         layout.addWidget(QLabel("Notes"))
         layout.addWidget(self.notes_input)
 
+        layout.addWidget(QLabel("Expiry Date"))
+        layout.addWidget(self.expiry_input)
+
         self.fav_btn = QPushButton("⭐ Mark as Favourite")
         self.fav_btn.setCheckable(True)
         self.fav_btn.toggled.connect(self.toggle_favourite)
@@ -87,12 +94,32 @@ class ViewPasswordWindow(QWidget):
 
         conn = sqlite3.connect("vault.db")
         c = conn.cursor()
-        c.execute("SELECT name, email, url, password, notes, is_favourite FROM passwords WHERE id = ?", (self.entry_id,))
+        c.execute("SELECT name, email, url, password, notes, expiry_date, is_favourite FROM passwords WHERE id = ?", (self.entry_id,))
         row = c.fetchone() 
         conn.close()
 
         if row:
-            name, email, url, encrypted_pw, notes, is_fav = row
+            name, email, url, encrypted_pw, notes, expiry_date, is_fav = row
+            if expiry_date:
+                y, m, d = map(int, expiry_date.split("-"))
+                self.expiry_input.setDate(QDate(y, m, d))
+            else:
+                self.expiry_input.setDate(QDate.currentDate())
+
+            import datetime
+            from core.db import log_notification
+
+            try:
+                if expiry_date:
+                    expiry = datetime.datetime.strptime(expiry_date, "%Y-%m-%d").date()
+                    today = datetime.date.today()
+                    if expiry < today:
+                        log_notification(self.username, f"Password for '{name}' has expired.")
+                    elif expiry <= today + datetime.timedelta(days=7):
+                        log_notification(self.username, f"Password for '{name}' is expiring soon.")
+            except Exception as e:
+                print(f"Failed expiry check: {e}")
+
             self.name_input.setText(name)
             self.email_input.setText(email)
             self.url_input.setText(url)
@@ -113,14 +140,18 @@ class ViewPasswordWindow(QWidget):
         url = self.url_input.text()
         password = encrypt_password(self.password_input.text())
         notes = self.notes_input.toPlainText()
+        expiry_qdate = self.expiry_input.date()
+        expiry_date = expiry_qdate.toString("yyyy-MM-dd")
+        if expiry_qdate == QDate.currentDate():
+            expiry_date = None
 
         conn = sqlite3.connect("vault.db")
         c = conn.cursor()
         c.execute("""
             UPDATE passwords
-            SET name = ?, email = ?, url = ?, password = ?, notes = ?
+            SET name = ?, email = ?, url = ?, password = ?, notes = ?, expiry_date = ?
             WHERE id = ?
-        """, (name, email, url, password, notes, self.entry_id))
+        """, (name, email, url, password, notes, expiry_date, self.entry_id))
         conn.commit()
         conn.close()
 

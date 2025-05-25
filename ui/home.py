@@ -9,6 +9,13 @@ class HomeWindow(QWidget):
     def __init__(self, username):
         super().__init__()
         self.username = username
+        from core.db import get_expiring_passwords, log_notification
+        expiring = get_expiring_passwords(username)
+        for name, status in expiring:
+            if status == "expired":
+                log_notification(username, f"Password for '{name}' has expired.")
+            elif status == "soon":
+                log_notification(username, f"Password for '{name}' is expiring soon.")
         self.current_view = "All Items"
         self.setWindowTitle("Password Vault")
         self.setGeometry(400, 150, 1000, 600)
