@@ -308,12 +308,23 @@ def get_expiring_passwords(username):
 def ensure_last_modified_column():
     conn = sqlite3.connect("vault.db")
     c = conn.cursor()
+
+    # Ensure column exists
     c.execute("PRAGMA table_info(passwords)")
     columns = [col[1] for col in c.fetchall()]
     if 'last_modified' not in columns:
-        c.execute("ALTER TABLE passwords ADD COLUMN last_modified DATETIME DEFAULT CURRENT_TIMESTAMP")
-        conn.commit()
+        c.execute("ALTER TABLE passwords ADD COLUMN last_modified DATETIME")
+
+    # Update any NULL values with current timestamp
+    c.execute("""
+        UPDATE passwords
+        SET last_modified = datetime('now')
+        WHERE last_modified IS NULL
+    """)
+
+    conn.commit()
     conn.close()
+
 
 def fetch_all_passwords_sorted(method="Name"):
     conn = sqlite3.connect("vault.db")
