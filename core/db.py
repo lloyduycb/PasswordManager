@@ -172,9 +172,17 @@ def ensure_favourite_column():
     c = conn.cursor()
     c.execute("PRAGMA table_info(passwords)")
     columns = [col[1] for col in c.fetchall()]
-    if "is_favourite" not in columns:
-        c.execute("ALTER TABLE passwords ADD COLUMN is_favourite INTEGER DEFAULT 0")
-        conn.commit()
+
+    if "last_modified" not in columns:
+        # Step 1: Add the column with no default
+        c.execute("ALTER TABLE passwords ADD COLUMN last_modified TEXT")
+
+        # Step 2: Manually set all existing rows to now
+        from datetime import datetime
+        now = datetime.now().isoformat()
+        c.execute("UPDATE passwords SET last_modified = ?", (now,))
+
+    conn.commit()
     conn.close()
 
 def set_favourite(entry_id, value=True):
