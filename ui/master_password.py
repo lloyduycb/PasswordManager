@@ -1,6 +1,7 @@
 # master_password.py
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QFrame
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
+
 import sqlite3
 import bcrypt
 
@@ -127,8 +128,30 @@ class MasterPasswordWindow(QWidget):
         else:
             # Create new master password
             if len(password) < 6:
-                QMessageBox.warning(self, "Weak Password", "Master password must be at least 8 characters.")
+                box = QMessageBox(self)
+                box.setIcon(QMessageBox.Warning)
+                box.setWindowTitle("Weak Password")
+                box.setText('<span style="color:#EFE9E1;">Master password must be at least 8 characters.</span>')
+                box.setStyleSheet("""
+                    QMessageBox {
+                        background-color: #222052;
+                    }
+                    QLabel {
+                        color: #EFE9E1;
+                    }
+                    QPushButton {
+                        color: #EFE9E1;
+                        background-color: #222052;
+                        border: none;
+                        padding: 5px 12px;
+                    }
+                    QPushButton:hover {
+                        background-color: #000000;
+                    }
+                """)
+                box.exec_()
                 return
+
                 
             hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
             
@@ -138,17 +161,38 @@ class MasterPasswordWindow(QWidget):
             conn.commit()
             conn.close()
             
-            QMessageBox.information(self, "Success", "Master password set.")
-            
-            if self.from_register:
-                from ui.login import LoginWindow
-                self.login_window = LoginWindow()
-                self.login_window.show()
-                self.close()
-            else:
-                self.open_home()
 
-            self.close()
+
+            msg_box = QMessageBox(self)
+            msg_box.setIcon(QMessageBox.Information)
+            msg_box.setWindowTitle("Success")
+            msg_box.setText("Master password set.")
+            msg_box.setStandardButtons(QMessageBox.NoButton)  # Prevent blocking
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background-color: #222052;
+                    color: #EFE9E1;
+                    font-family: 'Segoe UI';
+                }
+                QLabel {
+                    color: #EFE9E1;
+                }
+            """)
+            msg_box.show()
+
+            # Auto-close message box and THEN proceed
+            def proceed_after_message():
+                msg_box.close()
+                if self.from_register:
+                    from ui.login import LoginWindow
+                    self.login_window = LoginWindow()
+                    self.login_window.show()
+                else:
+                    self.open_home()
+                self.close()
+
+            QTimer.singleShot(1500, proceed_after_message)
+
 
     def open_home(self):
         from ui.home import HomeWindow
