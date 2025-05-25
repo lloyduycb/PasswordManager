@@ -645,27 +645,30 @@ class HomeWindow(QWidget):
         checkbox_row = QHBoxLayout()
         checkbox_row.setSpacing(20)
 
-        self.upper_cb = QCheckBox("A–Z")
-        self.lower_cb = QCheckBox("a–z")
-        self.digits_cb = QCheckBox("0–9")
-        self.symbols_cb = QCheckBox("!@#$")
+        # Replace QCheckBox with QPushButton
+        self.upper_btn = QPushButton("A–Z")
+        self.lower_btn = QPushButton("a–z")
+        self.digits_btn = QPushButton("0–9")
+        self.symbols_btn = QPushButton("!@#$")
 
-        for cb in [self.upper_cb, self.lower_cb, self.digits_cb, self.symbols_cb]:
-            cb.setChecked(True)
-            cb.setStyleSheet("""
-                QCheckBox {
+        for btn in [self.upper_btn, self.lower_btn, self.digits_btn, self.symbols_btn]:
+            btn.setCheckable(True)
+            btn.setChecked(True)
+            btn.setStyleSheet("""
+                QPushButton {
                     font-size: 13px;
                     background-color: #EFE9E1;
                     padding: 6px 12px;
                     border: 2px solid #C3B4A6;
                     border-radius: 12px;
                 }
-                QCheckBox::indicator { width: 0px; }  /* hide square */
-                QCheckBox:hover {
-                    background-color: #DDD7CE;
+                QPushButton:checked {
+                    background-color: #222052;
+                    color: #EFE9E1;
+                    border: 2px solid #222052;
                 }
             """)
-            checkbox_row.addWidget(cb)
+            checkbox_row.addWidget(btn)
 
         layout.addLayout(checkbox_row)
 
