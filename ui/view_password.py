@@ -1,8 +1,9 @@
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QLineEdit, QTextEdit, QPushButton,
-    QVBoxLayout, QHBoxLayout, QMessageBox, QApplication, QDateEdit
+    QVBoxLayout, QHBoxLayout, QMessageBox, QApplication, QDateEdit, QFrame, QGridLayout, QStyle
 )
 from PyQt5.QtCore import Qt, QDate
+from PyQt5.QtGui import QFont, QIcon
 import sqlite3
 from core.crypto import decrypt_password, encrypt_password
 from core.db import insert_password_entry  # Optional if you reuse db functions
@@ -13,89 +14,156 @@ class ViewPasswordWindow(QWidget):
         self.entry_id = entry_id
         self.username = username
         self.refresh_callback = refresh_callback
-        self.setWindowTitle("View / Edit Password")
-        self.setGeometry(600, 250, 450, 400)
+        self.setWindowTitle("Password Detail")
+        self.setGeometry(550, 200, 420, 520)
 
         self.init_ui()
         self.load_entry()
 
     def init_ui(self):
-        layout = QVBoxLayout()
+        def emoji_button(char: str) -> QPushButton:
+            btn = QPushButton(char)
+            btn.setFont(QFont("Segoe UI Emoji", 18))  # increased from 14 to 18
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: transparent;
+                    border: none;
+                    padding: 0;
+                    min-width: 28px;
+                    min-height: 28px;
+                }
+                QPushButton:hover {
+                    color: #000000;
+                }
+            """)
+            return btn
 
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #EFE9E1;
+                font-family: 'Segoe UI', sans-serif;
+                color: #222052;
+            }
+            QLabel {
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QLineEdit, QTextEdit {
+                background-color: #DDD7CE;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: 13px;
+            }
+            QPushButton {
+                background-color: #222052;
+                color: #EFE9E1;
+                border-radius: 12px;
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            QPushButton:hover {
+                background-color: #000000;
+            }
+        """)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setSpacing(18)
+
+        title = QLabel("View Password")
+        title.setFont(QFont("Segoe UI", 20, QFont.Bold))
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+
+        grid = QGridLayout()
+        grid.setVerticalSpacing(12)
+        grid.setHorizontalSpacing(8)
+
+        # Name
         self.name_input = QLineEdit()
+        grid.addWidget(QLabel("Name"), 0, 0)
+        grid.addWidget(self.name_input, 0, 1)
+
+        # Email
         self.email_input = QLineEdit()
+        email_row = QHBoxLayout()
+        email_row.addWidget(self.email_input)
+        email_copy_btn = emoji_button("📋")
+        email_copy_btn.clicked.connect(lambda: self.copy_to_clipboard(self.email_input.text()))
+        email_row.addWidget(email_copy_btn)
+        email_frame = QFrame()
+        email_frame.setLayout(email_row)
+        grid.addWidget(QLabel("Email"), 1, 0)
+        grid.addWidget(email_frame, 1, 1)
+
+        # URL
         self.url_input = QLineEdit()
+        grid.addWidget(QLabel("URL"), 2, 0)
+        grid.addWidget(self.url_input, 2, 1)
+
+        # Password
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.Password)
+        pw_row = QHBoxLayout()
+        pw_row.addWidget(self.password_input)
+
+        toggle_btn = emoji_button("👁")
+        toggle_btn.setCheckable(True)
+        toggle_btn.toggled.connect(self.toggle_visibility)
+
+        copy_btn = emoji_button("📋")
+        copy_btn.clicked.connect(lambda: self.copy_to_clipboard(self.password_input.text()))
+
+        pw_row.addWidget(copy_btn)
+        pw_row.addWidget(toggle_btn)
+
+        pw_frame = QFrame()
+        pw_frame.setLayout(pw_row)
+        grid.addWidget(QLabel("Password"), 3, 0)
+        grid.addWidget(pw_frame, 3, 1)
+
+        # Notes
         self.notes_input = QTextEdit()
+        self.notes_input.setPlaceholderText("Notes")
+        grid.addWidget(QLabel("Notes"), 4, 0)
+        grid.addWidget(self.notes_input, 4, 1)
+
+        # Expiry
         self.expiry_input = QDateEdit()
         self.expiry_input.setCalendarPopup(True)
         self.expiry_input.setDisplayFormat("yyyy-MM-dd")
+        grid.addWidget(QLabel("Expiry Date"), 5, 0)
+        grid.addWidget(self.expiry_input, 5, 1)
 
+        layout.addLayout(grid)
 
-        # Row: Email + Copy
-        email_layout = QHBoxLayout()
-        email_layout.addWidget(self.email_input)
-        email_copy_btn = QPushButton("📋")
-        email_copy_btn.clicked.connect(lambda: self.copy_to_clipboard(self.email_input.text()))
-        email_layout.addWidget(email_copy_btn)
-
-        # Row: Password + Copy + Toggle
-        password_layout = QHBoxLayout()
-        password_layout.addWidget(self.password_input)
-        copy_btn = QPushButton("📋")
-        copy_btn.clicked.connect(lambda: self.copy_to_clipboard(self.password_input.text()))
-        toggle_btn = QPushButton("👁")
-        copy_btn.clicked.connect(lambda: self.copy_to_clipboard(self.password_input.text()))
-        toggle_btn.setCheckable(True)
-        toggle_btn.toggled.connect(self.toggle_visibility)
-        password_layout.addWidget(copy_btn)
-        password_layout.addWidget(toggle_btn)
-
-        layout.addWidget(QLabel("Name"))
-        layout.addWidget(self.name_input)
-
-        layout.addWidget(QLabel("Email"))
-        layout.addLayout(email_layout)
-
-        layout.addWidget(QLabel("URL"))
-        layout.addWidget(self.url_input)
-
-        layout.addWidget(QLabel("Password"))
-        layout.addLayout(password_layout)
-
-        layout.addWidget(QLabel("Notes"))
-        layout.addWidget(self.notes_input)
-
-        layout.addWidget(QLabel("Expiry Date"))
-        layout.addWidget(self.expiry_input)
-
+        # Favourite
         self.fav_btn = QPushButton("⭐ Mark as Favourite")
         self.fav_btn.setCheckable(True)
         self.fav_btn.toggled.connect(self.toggle_favourite)
         layout.addWidget(self.fav_btn)
 
+        # Action buttons
         btn_layout = QHBoxLayout()
         save_btn = QPushButton("Save")
         save_btn.clicked.connect(self.save_entry)
-
         delete_btn = QPushButton("Delete")
         delete_btn.clicked.connect(self.delete_entry)
-
         btn_layout.addWidget(save_btn)
         btn_layout.addWidget(delete_btn)
-
         layout.addLayout(btn_layout)
+
         self.setLayout(layout)
+
 
     def load_entry(self):
         from core.db import update_last_used
-        update_last_used(self.entry_id)  
+        update_last_used(self.entry_id)
 
         conn = sqlite3.connect("vault.db")
         c = conn.cursor()
         c.execute("SELECT name, email, url, password, notes, expiry_date, is_favourite FROM passwords WHERE id = ?", (self.entry_id,))
-        row = c.fetchone() 
+        row = c.fetchone()
         conn.close()
 
         if row:
@@ -125,14 +193,9 @@ class ViewPasswordWindow(QWidget):
             self.url_input.setText(url)
             self.password_input.setText(decrypt_password(encrypted_pw))
             self.notes_input.setPlainText(notes)
-
             self.fav_btn.setChecked(bool(is_fav))
             self.fav_btn.setText("⭐ Unfavourite" if is_fav else "⭐ Mark as Favourite")
-            from core.db import log_notification
             log_notification(self.username, f"Viewed password: {name}")
-
-
-
 
     def save_entry(self):
         name = self.name_input.text()
@@ -188,6 +251,6 @@ class ViewPasswordWindow(QWidget):
         is_checked = self.fav_btn.isChecked()
         set_favourite(self.entry_id, is_checked)
         self.fav_btn.setText("⭐ Unfavourite" if is_checked else "⭐ Mark as Favourite")
-
         if self.refresh_callback:
             self.refresh_callback()
+

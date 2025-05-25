@@ -486,10 +486,16 @@ class HomeWindow(QWidget):
             print(f"No action for + in view: {self.current_view}")
 
     def logout(self):
-        from ui.start import StartPage  # Move to local import to fix circular import
-        self.start_page = StartPage()
-        self.start_page.show()
-        self.close()
+        self.close()  # Close HomeWindow
+
+        # Close any other subwindows (e.g. view/edit)
+        if hasattr(self, "detail_window"):
+            self.detail_window.close()
+
+        from ui.master_password import MasterPasswordWindow
+        self.master_pw_window = MasterPasswordWindow(self.username)  # Or just blank if username isn’t needed
+        self.master_pw_window.show()
+
         
     def reload_vault(self):
         from core.db import fetch_all_passwords
@@ -818,12 +824,19 @@ class HomeWindow(QWidget):
     
     def evaluate_password_strength(self, password: str) -> int:
         import re
-
         length = len(password)
         score = 0
 
-        if length >= 8:
+        if length < 8:
+            return 10  # Very weak, immediate return
+        if length < 12:
+            score -= 20  # Penalise short passwords
+
+        if length >= 14:
             score += 25
+        elif length >= 12:
+            score += 15
+
         if re.search(r"[A-Z]", password):
             score += 20
         if re.search(r"[a-z]", password):
@@ -833,7 +846,9 @@ class HomeWindow(QWidget):
         if re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
             score += 15
 
-        return min(score, 100)
+        return min(max(score, 0), 100)
+
+
     def sort_vault_entries(self, method):
         from core.db import fetch_all_passwords_sorted
 

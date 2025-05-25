@@ -1,5 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtGui import QFont, QFontDatabase
 from core.db import init_db
 from ui.start import StartPage
 
@@ -13,3 +14,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Fatal error: {e}")
         sys.exit(1)
+
