@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QFrame
+from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QFrame, QSizePolicy
 from PyQt5.QtCore import Qt
 import sqlite3
 import bcrypt 
@@ -7,7 +7,7 @@ class LoginWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Login")
-        self.setGeometry(500, 200, 350, 200)
+        self.setGeometry(500, 200, 350, 320)
 
         outer_layout = QVBoxLayout(self)
 
@@ -19,7 +19,15 @@ class LoginWindow(QWidget):
                 padding: 20px;
             }
         """)
+
         card_layout = QVBoxLayout(card)
+
+        title = QLabel("Login")
+        title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet("font-size: 20px; font-weight: bold; color: #222052;")
+        card_layout.addWidget(title)
+        card_layout.addSpacing(10)  # Add vertical gap
+
 
 
         self.email_or_user = QLineEdit()
@@ -34,13 +42,17 @@ class LoginWindow(QWidget):
         self.login_btn.setAutoDefault(True)
         self.login_btn.clicked.connect(self.login)
 
-        card_layout.addWidget(QLabel("Sign in"))
+
+        # Input fields below
         card_layout.addWidget(self.email_or_user)
+
         card_layout.addWidget(self.password)
         card_layout.addWidget(self.login_btn)
 
         outer_layout.addWidget(card, alignment=Qt.AlignCenter)
-        card.setFixedSize(280, 220)  # or whatever size fits your form content
+        card.setMinimumWidth(280)
+        card.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+
 
         
         self.setLayout(outer_layout)
