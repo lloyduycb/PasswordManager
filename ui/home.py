@@ -857,31 +857,29 @@ class HomeWindow(QWidget):
         return min(max(score, 0), 100)
 
 
-    def sort_vault_entries(self, method):
-        from core.db import fetch_all_passwords_sorted
+    def sort_vault_entries(self, sort_type):
+        from datetime import datetime
+        from core.db import fetch_all_passwords, fetch_all_passwords_sorted
+        from core.db import fetch_passwords_by_folder, fetch_passwords_by_folder_sorted
 
+        # Fetch based on current view (folder or all)
         if hasattr(self, "current_folder_id") and self.current_folder_id:
-            from core.db import fetch_passwords_by_folder_sorted
-            passwords = fetch_passwords_by_folder_sorted(self.current_folder_id, method)
+            passwords = fetch_passwords_by_folder_sorted(self.current_folder_id, sort_type)
         else:
-            passwords = fetch_all_passwords_sorted(method)
+            passwords = fetch_all_passwords_sorted(sort_type)
 
-        self.vault_list.clear()
         self.vault_entries = passwords
+        self.vault_list.clear()
 
         for entry in passwords:
             if len(entry) < 4:
                 continue
 
             entry_id, name, modified, used = entry
-
-            # Format date strings
-            modified_str = "-"
-            used_str = "-"
+            modified_str = used_str = "-"
 
             if modified:
                 try:
-                    from datetime import datetime
                     modified_dt = datetime.strptime(modified, "%Y-%m-%d %H:%M:%S")
                     modified_str = modified_dt.strftime("%d %b %Y")
                 except:
@@ -897,44 +895,11 @@ class HomeWindow(QWidget):
             item_text = f"{name:<20}   {modified_str:<15}   {used_str:<15}"
             self.vault_list.addItem(QListWidgetItem(item_text))
 
-    def sort_vault_entries(self, sort_type):
-        if not hasattr(self, 'vault_entries'):
-            return
-
-        if sort_type == "Name":
-            self.vault_entries.sort(key=lambda x: x[1].lower() if x[1] else "")
-        elif sort_type == "Last Modified":
-            self.vault_entries.sort(key=lambda x: x[2] or "", reverse=True)
-        elif sort_type == "Last Used":
-            self.vault_entries.sort(key=lambda x: x[3] or "", reverse=True)
-
-        self.vault_list.clear()
-        for entry in self.vault_entries:
-            entry_id, name, modified, used = entry
-            modified_str = used_str = "-"
-
-            try:
-                if modified:
-                    modified_dt = datetime.strptime(modified, "%Y-%m-%d %H:%M:%S")
-                    modified_str = modified_dt.strftime("%d %b %Y")
-            except:
-                pass
-
-            try:
-                if used:
-                    used_dt = datetime.strptime(used, "%Y-%m-%d %H:%M:%S")
-                    used_str = used_dt.strftime("%d %b %Y")
-            except:
-                pass
-
-            item_text = f"{name:<20}   {modified_str:<15}   {used_str:<15}"
-            item = QListWidgetItem(item_text)
-            self.vault_list.addItem(item)
 
 
 
 
-    
+        
 
 
 
