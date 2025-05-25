@@ -72,6 +72,7 @@ def init_db():
     ensure_email_otp_columns()
     create_notifications_table()
     ensure_expiry_column()
+    ensure_last_modified_column()
 
 
 def insert_password_entry(name, email, url, password, notes, folder_id, expiry_date=None):
@@ -79,11 +80,15 @@ def insert_password_entry(name, email, url, password, notes, folder_id, expiry_d
     try:
         conn = sqlite3.connect("vault.db")
         c = conn.cursor()
+
+        last_modified = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         c.execute("""
             INSERT INTO passwords 
-            (name, email, url, password, notes, folder_id, expiry_date) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (name, email, url, password, notes, folder_id, expiry_date))
+            (name, email, url, password, notes, folder_id, expiry_date, last_modified) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (name, email, url, password, notes, folder_id, expiry_date, last_modified))
+
         conn.commit()
     except sqlite3.Error as e:
         print(f"Database error: {e}")
@@ -91,6 +96,7 @@ def insert_password_entry(name, email, url, password, notes, folder_id, expiry_d
     finally:
         if conn:
             conn.close()
+
 
 def log_notification(username, message):
     conn = sqlite3.connect("vault.db")
@@ -103,10 +109,11 @@ def log_notification(username, message):
 def fetch_all_passwords():
     conn = sqlite3.connect("vault.db")
     c = conn.cursor()
-    c.execute("SELECT id, name FROM passwords")
+    c.execute("SELECT id, name, last_modified, last_used FROM passwords")
     results = c.fetchall()
     conn.close()
     return results
+
 
 def insert_folder(name):
     conn = sqlite3.connect("vault.db")
@@ -278,6 +285,18 @@ def get_expiring_passwords(username):
         except Exception:
             continue
     return results
+
+def ensure_last_modified_column():
+    conn = sqlite3.connect("vault.db")
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(passwords)")
+    columns = [col[1] for col in c.fetchall()]
+    if 'last_modified' not in columns:
+        c.execute("ALTER TABLE passwords ADD COLUMN last_modified DATETIME DEFAULT CURRENT_TIMESTAMP")
+        conn.commit()
+    conn.close()
+
+
 
 
 

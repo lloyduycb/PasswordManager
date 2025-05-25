@@ -1,5 +1,6 @@
 # master_password.py
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox, QFrame
+from PyQt5.QtCore import Qt
 import sqlite3
 import bcrypt
 
@@ -13,9 +14,21 @@ class MasterPasswordWindow(QWidget):
         self.setWindowTitle("Master Password")
         self.setGeometry(500, 200, 300, 200)  # Slightly taller for better layout
         
-        layout = QVBoxLayout()
+        outer_layout = QVBoxLayout(self)
+
+        card = QFrame()
+        card.setStyleSheet("""
+            QFrame {
+                background-color: #EFE9E1;
+                border-radius: 12px;
+                padding: 20px;
+            }
+        """)
+        card_layout = QVBoxLayout(card)
         
         self.label = QLabel("Enter your Master Password")
+        self.label.setAlignment(Qt.AlignCenter)
+
         self.input = QLineEdit()
         self.input.setPlaceholderText("Master Password")
         self.input.setEchoMode(QLineEdit.Password)
@@ -24,11 +37,50 @@ class MasterPasswordWindow(QWidget):
         self.submit.setDefault(True)
         self.submit.setAutoDefault(True)
         self.submit.clicked.connect(self.verify_master_password)
-        
-        layout.addWidget(self.label)
-        layout.addWidget(self.input)
-        layout.addWidget(self.submit)
-        self.setLayout(layout)
+
+        card_layout.addWidget(self.label)
+        card_layout.addWidget(self.input)
+        card_layout.addWidget(self.submit)
+
+        outer_layout.addStretch()
+        outer_layout.addWidget(card, alignment=Qt.AlignCenter)
+        outer_layout.addStretch()
+
+        self.setLayout(outer_layout)
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #222052;
+                font-family: 'Segoe UI', sans-serif;
+                color: #000000;
+            }
+
+            QLineEdit {
+                background-color: #EEE5D3;
+                border: 1px solid #C3B4A6;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: 14px;
+            }
+
+            QPushButton {
+                background-color: #222052;
+                color: #EFE9E1;
+                border: none;
+                border-radius: 8px;
+                padding: 10px;
+                font-weight: bold;
+            }
+
+            QPushButton:hover {
+                background-color: #000000;
+            }
+
+            QLabel {
+                color: #222052;
+                font-size: 16px;
+                font-weight: bold;
+            }
+        """)
         
         # Check if master password exists for this user
         self.master_exists = self.check_master_exists()

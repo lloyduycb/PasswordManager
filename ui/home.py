@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QListWidget,
-    QLineEdit, QListWidgetItem, QStackedLayout, QFrame, QMessageBox
+    QLineEdit, QListWidgetItem, QStackedLayout, QFrame, QMessageBox, QComboBox
 )
 from PyQt5.QtCore import Qt, QTimer, QEvent, QTime
 from ui.master_password import MasterPasswordWindow
@@ -38,14 +38,40 @@ class HomeWindow(QWidget):
         self.detail_window.show()
 
     def init_ui(self):
+        from PyQt5.QtWidgets import QFrame
+
         # Layouts
         main_layout = QHBoxLayout()
         sidebar_layout = QVBoxLayout()
         content_wrapper = QVBoxLayout()
-        topbar_layout = QHBoxLayout()
         self.stack = QStackedLayout()
 
-        # --- Sidebar with collapsible Vault section ---
+        # --- Styled Sidebar ---
+        sidebar_frame = QFrame()
+        sidebar_frame.setStyleSheet("""
+            QFrame {
+                background-color: #222052;
+                border-top-left-radius: 12px;
+                border-bottom-left-radius: 12px;
+                padding: 10px;
+            }
+
+            QPushButton {
+                background-color: transparent;
+                color: #EFE9E1;
+                border: none;
+                text-align: left;
+                padding: 6px 10px;
+                font-size: 14px;
+            }
+
+            QPushButton:hover {
+                background-color: #000000;
+                border-radius: 6px;
+            }
+        """)
+        sidebar_frame.setLayout(sidebar_layout)
+
         all_items_btn = QPushButton("All Items")
         all_items_btn.clicked.connect(lambda: self.switch_view("All Items"))
         sidebar_layout.addWidget(all_items_btn)
@@ -58,7 +84,6 @@ class HomeWindow(QWidget):
         notif_btn.clicked.connect(lambda: self.switch_view("Notifications"))
         sidebar_layout.addWidget(notif_btn)
 
-        # Vault (collapsible)
         self.vault_toggle = QPushButton("▸ Vault")
         self.vault_toggle.setCheckable(True)
         self.vault_toggle.setChecked(False)
@@ -86,7 +111,40 @@ class HomeWindow(QWidget):
 
         sidebar_layout.addStretch()
 
-        # Topbar
+        # --- Styled Topbar ---
+        topbar_frame = QFrame()
+        topbar_frame.setStyleSheet("""
+            QFrame {
+                background-color: #EFE9E1;
+                padding: 10px;
+                border-top-left-radius: 12px;
+                border-top-right-radius: 12px;
+            }
+
+            QLineEdit {
+                background-color: white;
+                border: 1px solid #C3B4A6;
+                border-radius: 8px;
+                padding: 6px;
+                font-size: 14px;
+            }
+
+            QPushButton {
+                background-color: #222052;
+                color: #EFE9E1;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 12px;
+            }
+
+            QPushButton:hover {
+                background-color: #000000;
+            }
+        """)
+        topbar_layout = QHBoxLayout(topbar_frame)
+        topbar_layout.setContentsMargins(10, 5, 10, 5)
+        topbar_layout.setSpacing(10)
+
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Search")
         self.search_input.setFixedWidth(200)
@@ -105,7 +163,7 @@ class HomeWindow(QWidget):
         topbar_layout.addStretch()
         topbar_layout.addWidget(self.logout_btn)
 
-        # Views
+        # --- Views ---
         self.views = {
             "All Items": self.build_recent_view(),
             "Vault": self.build_vault_view(),
@@ -118,12 +176,26 @@ class HomeWindow(QWidget):
         for v in self.views.values():
             self.stack.addWidget(v)
 
-        content_wrapper.addLayout(topbar_layout)
+        content_wrapper.addWidget(topbar_frame)
         content_wrapper.addLayout(self.stack)
 
-        main_layout.addLayout(sidebar_layout)
+        main_layout.addWidget(sidebar_frame)
         main_layout.addLayout(content_wrapper)
+
         self.setLayout(main_layout)
+
+        # --- Global Style ---
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #DDD7CE;
+                font-family: 'Segoe UI', sans-serif;
+                color: #222052;
+            }
+
+            QLabel {
+                font-weight: bold;
+            }
+        """)
 
         self.switch_view("All Items")
 
@@ -133,23 +205,90 @@ class HomeWindow(QWidget):
         self.vault_menu_widget.setVisible(is_open)
 
     def switch_view(self, name):
-        self.current_view = name  # Store the view for button logic
+        self.current_view = name
         index = list(self.views.keys()).index(name)
         self.stack.setCurrentIndex(index)
 
+        if name == "Vault" and hasattr(self, "current_folder_id"):
+            # If we were in a folder view, reset the vault entries
+            self.current_folder_id = None
+            self.reload_vault()
+
+
     def build_recent_view(self):
+        from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QListWidget, QListWidgetItem, QHBoxLayout
+        from PyQt5.QtCore import Qt, QSize
+        from PyQt5.QtGui import QFont
+
         widget = QWidget()
         layout = QVBoxLayout()
-        layout.addWidget(QLabel("Recent"))
+        layout.setContentsMargins(20, 10, 20, 20)
 
+        # Title
+        title = QLabel("Recent")
+        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #222052; margin-bottom: 10px;")
+        layout.addWidget(title)
+
+        # Recent list
         self.recent_list = QListWidget()
+        self.recent_list.setStyleSheet("""
+            QListWidget {
+                background-color: transparent;
+                border: none;
+            }
+            QListWidget::item {
+                margin: 10px 0;
+                border: none;
+            }
+            QListWidget::item:selected {
+                background: transparent;
+            }
+        """)
 
         from core.db import fetch_recent_passwords
-        recent_entries = fetch_recent_passwords()
-        self.recent_entries = recent_entries  # store IDs to track clicks
+        self.recent_entries = fetch_recent_passwords()
 
-        for entry_id, name in recent_entries:
-            QListWidgetItem(name, self.recent_list)
+        for entry in self.recent_entries:
+            if len(entry) < 2:
+                continue
+            entry_id, name = entry
+
+            # Row widget
+            row_widget = QWidget()
+            row_layout = QHBoxLayout(row_widget)
+            row_layout.setContentsMargins(20, 12, 20, 12)  # ✅ top-bottom padding increased
+            row_layout.setSpacing(10)
+            row_widget.setStyleSheet("""
+                QWidget {
+                    background-color: #EEE5D3;
+                    border-radius: 12px;
+                }
+            """)
+
+            # Font
+            font = QFont("Segoe UI", 10)
+            font.setBold(True)
+
+            # Labels
+            name_label = QLabel(name if name else "(Unnamed)")
+            name_label.setFont(QFont("Segoe UI", 10, QFont.Bold))
+            name_label.setStyleSheet("color: #222052; background: transparent;")
+
+
+            icon_label = QLabel("✏️")
+            icon_label.setFont(QFont("Segoe UI Emoji", 12))
+            icon_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+            icon_label.setStyleSheet("color: #222052; padding-left: 10px;")
+
+            row_layout.addWidget(name_label)
+            row_layout.addStretch()
+            row_layout.addWidget(icon_label)
+
+            # Set row height explicitly (prevents cropping)
+            item = QListWidgetItem()
+            item.setSizeHint(QSize(0, 44))  # ✅ Adjust row height here
+            self.recent_list.addItem(item)
+            self.recent_list.setItemWidget(item, row_widget)
 
         self.recent_list.itemClicked.connect(self.open_recent_entry)
 
@@ -159,20 +298,82 @@ class HomeWindow(QWidget):
 
 
     def build_vault_view(self):
-        from core.db import fetch_all_passwords  # Make sure this exists
-        from PyQt5.QtWidgets import QListWidgetItem, QWidget, QVBoxLayout, QLabel, QListWidget
 
         widget = QWidget()
         layout = QVBoxLayout()
-        layout.addWidget(QLabel("List of Passwords"))
-        
+
+        # Header row
+        header_layout = QHBoxLayout()
+        title = QLabel("List of Passwords")
+        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #222052;")
+        header_layout.addWidget(title)
+        header_layout.addStretch()
+
+        arrange_label = QLabel("Arrange By")
+        arrange_label.setStyleSheet("font-size: 12px;")
+        sort_dropdown = QComboBox()
+        sort_dropdown.addItems(["Name", "Last Modified", "Last Used"])
+        sort_dropdown.setStyleSheet("QComboBox { border: none; background: transparent; }")
+        header_layout.addWidget(arrange_label)
+        header_layout.addWidget(sort_dropdown)
+
+        layout.addLayout(header_layout)
+
+        # Column Headers
+        column_header = QLabel("Name     Last Modified     Last Used")
+        column_header.setStyleSheet("color: #666666; padding-left: 10px;")
+        layout.addWidget(column_header)
+
+        # Password List
         self.vault_list = QListWidget()
+        self.vault_list.setStyleSheet("""
+            QListWidget {
+                background-color: transparent;
+                border: none;
+                padding: 10px;
+            }
+            QListWidget::item {
+                background-color: #EEE5D3;
+                border-radius: 12px;
+                margin: 6px 0;
+                padding: 12px;
+            }
+            QListWidget::item:selected {
+                background-color: #C3B4A6;
+            }
+        """)
+
         self.vault_list.itemClicked.connect(self.open_entry_view)
 
-        # Load saved passwords from DB
-        self.vault_entries = fetch_all_passwords()  # [(id, name), ...]
-        for entry_id, name in self.vault_entries:
-            item = QListWidgetItem(name)
+        from core.db import fetch_all_passwords
+        self.vault_entries = fetch_all_passwords()
+
+        for entry in self.vault_entries:
+            if len(entry) < 4:
+                continue
+
+            entry_id, name, modified, used = entry
+
+            # Format date strings
+            modified_str = "-"
+            used_str = "-"
+            
+            if modified:
+                try:
+                    modified_dt = datetime.strptime(modified, "%Y-%m-%d %H:%M:%S")
+                    modified_str = modified_dt.strftime("%d %b %Y")
+                except:
+                    pass
+
+            if used:
+                try:
+                    used_dt = datetime.strptime(used, "%Y-%m-%d %H:%M:%S")
+                    used_str = used_dt.strftime("%d %b %Y")
+                except:
+                    pass
+
+            item_text = f"{name:<20}   {modified_str:<15}   {used_str:<15}"
+            item = QListWidgetItem(item_text)
             self.vault_list.addItem(item)
 
         layout.addWidget(self.vault_list)
@@ -181,21 +382,65 @@ class HomeWindow(QWidget):
 
 
     def build_folder_view(self):
-        from core.db import fetch_folders
+        from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QListWidgetItem, QListWidget
+
         widget = QWidget()
         layout = QVBoxLayout()
-        layout.addWidget(QLabel("Folders"))
-        
+
+        header_layout = QHBoxLayout()
+        title = QLabel("Folders")
+        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #222052;")
+        header_layout.addWidget(title)
+        header_layout.addStretch()
+
+        back_btn = QPushButton("← Back to All Passwords")
+        back_btn.setStyleSheet("font-size: 12px; background: transparent; color: #222052;")
+        back_btn.clicked.connect(lambda: self.switch_view("Vault"))
+        header_layout.addWidget(back_btn)
+
+        arrange_label = QLabel("Arrange By")
+        arrange_label.setStyleSheet("font-size: 12px;")
+        sort_dropdown = QComboBox()
+        sort_dropdown.addItems(["Name"])
+        sort_dropdown.setStyleSheet("QComboBox { border: none; background: transparent; }")
+        header_layout.addWidget(arrange_label)
+        header_layout.addWidget(sort_dropdown)
+
+        layout.addLayout(header_layout)
+
+        column_header = QLabel("Name")
+        column_header.setStyleSheet("color: #666666; padding-left: 10px;")
+        layout.addWidget(column_header)
+
         self.folder_list = QListWidget()
+        self.folder_list.setStyleSheet("""
+            QListWidget {
+                background-color: transparent;
+                border: none;
+                padding: 10px;
+            }
+            QListWidget::item {
+                background-color: #EEE5D3;
+                border-radius: 12px;
+                margin: 6px 0;
+                padding: 12px;
+            }
+            QListWidget::item:selected {
+                background-color: #C3B4A6;
+            }
+        """)
+
+        from core.db import fetch_folders
         folders = fetch_folders()
         for _, name in folders:
-            QListWidgetItem(name, self.folder_list)
+            QListWidgetItem(name + "     ➜", self.folder_list)
 
         self.folder_list.itemClicked.connect(self.open_folder_passwords)
 
         layout.addWidget(self.folder_list)
         widget.setLayout(layout)
         return widget
+
     
     def open_folder_passwords(self, item):
         from core.db import fetch_folders, fetch_passwords_by_folder
@@ -203,17 +448,19 @@ class HomeWindow(QWidget):
         index = self.folder_list.row(item)
         folder_id = fetch_folders()[index][0]  # Get folder ID from DB
 
-        self.current_folder_id = folder_id  # For tracking
-        self.current_view = f"Folder:{folder_id}"  # Update context
+        self.current_folder_id = folder_id
+        self.current_view = f"Folder:{folder_id}"
+
+        passwords = fetch_passwords_by_folder(folder_id)
+        self.vault_entries = passwords  # Store only these
 
         self.vault_list.clear()
-        passwords = fetch_passwords_by_folder(folder_id)
-        self.vault_entries = passwords  # Store for click/view access
-
         for entry_id, name in passwords:
-            QListWidgetItem(name, self.vault_list)
+            item = QListWidgetItem(name)
+            self.vault_list.addItem(item)
 
-        self.switch_view("Vault")  # Show vault layout, but filtered
+        self.stack.setCurrentIndex(list(self.views.keys()).index("Vault"))
+
 
 
     def build_label(self, text):
@@ -245,16 +492,18 @@ class HomeWindow(QWidget):
         
     def reload_vault(self):
         from core.db import fetch_all_passwords
+        self.current_folder_id = None
         self.vault_list.clear()
         entries = fetch_all_passwords()
-        for entry_id, name in entries:
+        self.vault_entries = entries
+
+        for entry in entries:
+            entry_id, name = entry[0], entry[1]
             QListWidgetItem(name, self.vault_list)
 
     def open_entry_view(self, item):
         index = self.vault_list.row(item)
-        from core.db import fetch_all_passwords
-        entry_list = fetch_all_passwords()
-        entry_id = entry_list[index][0]
+        entry_id = self.vault_entries[index][0]
 
         from ui.view_password import ViewPasswordWindow
         self.detail_window = ViewPasswordWindow(entry_id, self.username, refresh_callback=self.reload_vault)
@@ -312,51 +561,150 @@ class HomeWindow(QWidget):
 
     def build_generator_view(self):
         from core.utils import generate_password
-        from PyQt5.QtWidgets import QCheckBox, QSpinBox, QTextEdit
+        from PyQt5.QtWidgets import QCheckBox, QSpinBox, QTextEdit, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QWidget
+        from PyQt5.QtCore import Qt
+        from PyQt5.QtGui import QFont
 
         widget = QWidget()
         layout = QVBoxLayout()
-        layout.addWidget(QLabel("Password Generator"))
+        layout.setContentsMargins(40, 30, 40, 30)
+        layout.setSpacing(20)
 
-        # Options
-        self.length_input = QSpinBox()
-        self.length_input.setRange(4, 64)
-        self.length_input.setValue(12)
+        # Title
+        title = QLabel("Generator")
+        title.setFont(QFont("Segoe UI", 18, QFont.Bold))
+        title.setStyleSheet("color: #222052;")
+        layout.addWidget(title)
 
-        self.upper_cb = QCheckBox("Include Uppercase Letters")
-        self.upper_cb.setChecked(True)
-
-        self.lower_cb = QCheckBox("Include Lowercase Letters")
-        self.lower_cb.setChecked(True)
-
-        self.digits_cb = QCheckBox("Include Numbers")
-        self.digits_cb.setChecked(True)
-
-        self.symbols_cb = QCheckBox("Include Symbols")
-        self.symbols_cb.setChecked(True)
-
+        # Output Box (top)
         self.output_box = QTextEdit()
         self.output_box.setReadOnly(True)
-
-        generate_btn = QPushButton("Generate Password")
-        generate_btn.clicked.connect(lambda: self.generate_password_ui(generate_password))
-
-        # Layout
-        layout.addWidget(QLabel("Length"))
-        layout.addWidget(self.length_input)
-        layout.addWidget(self.upper_cb)
-        layout.addWidget(self.lower_cb)
-        layout.addWidget(self.digits_cb)
-        layout.addWidget(self.symbols_cb)
-        layout.addWidget(generate_btn)
+        self.output_box.setFixedHeight(50)
+        self.output_box.setStyleSheet("""
+            QTextEdit {
+                background-color: #EFE9E1;
+                border: 2px solid #C3B4A6;
+                border-radius: 12px;
+                padding: 12px;
+                font-size: 14px;
+            }
+        """)
         layout.addWidget(self.output_box)
-        copy_btn = QPushButton("Copy to Clipboard")
-        copy_btn.clicked.connect(self.copy_password_to_clipboard)
-        layout.addWidget(copy_btn)
 
+        # Quality Meter (optional mock)
+        quality_label = QLabel("Password Quality Meter")
+        quality_label.setStyleSheet("font-size: 12px; margin-top: -10px; margin-bottom: 2px; color: #444;")
+        layout.addWidget(quality_label)
+
+        from PyQt5.QtWidgets import QProgressBar
+
+        self.quality_bar = QProgressBar()
+        self.quality_bar.setFixedHeight(12)
+        self.quality_bar.setRange(0, 100)
+        self.quality_bar.setValue(0)
+        self.quality_bar.setTextVisible(False)
+        self.quality_bar.setStyleSheet("""
+            QProgressBar {
+                background-color: #DDD7CE;
+                border-radius: 6px;
+            }
+            QProgressBar::chunk {
+                background-color: #4C4A96;
+                border-radius: 6px;
+            }
+        """)
+        layout.addWidget(self.quality_bar)
+
+
+        # Length
+        options_label = QLabel("Options")
+        options_label.setStyleSheet("font-size: 14px; margin-top: 20px;")
+        layout.addWidget(options_label)
+
+        length_row = QHBoxLayout()
+        length_label = QLabel("Length")
+        length_label.setStyleSheet("font-size: 13px;")
+        self.length_input = QSpinBox()
+        self.length_input.setRange(5, 128)
+        self.length_input.setValue(12)
+        self.length_input.setFixedWidth(100)
+        self.length_input.setStyleSheet("""
+            QSpinBox {
+                background-color: #EFE9E1;
+                border: 2px solid #C3B4A6;
+                border-radius: 12px;
+                padding: 6px;
+            }
+        """)
+        length_row.addWidget(length_label)
+        length_row.addWidget(self.length_input)
+        length_row.addStretch()
+        layout.addLayout(length_row)
+
+        # Character checkboxes
+        checkbox_row = QHBoxLayout()
+        checkbox_row.setSpacing(20)
+
+        self.upper_cb = QCheckBox("A–Z")
+        self.lower_cb = QCheckBox("a–z")
+        self.digits_cb = QCheckBox("0–9")
+        self.symbols_cb = QCheckBox("!@#$")
+
+        for cb in [self.upper_cb, self.lower_cb, self.digits_cb, self.symbols_cb]:
+            cb.setChecked(True)
+            cb.setStyleSheet("""
+                QCheckBox {
+                    font-size: 13px;
+                    background-color: #EFE9E1;
+                    padding: 6px 12px;
+                    border: 2px solid #C3B4A6;
+                    border-radius: 12px;
+                }
+                QCheckBox::indicator { width: 0px; }  /* hide square */
+                QCheckBox:hover {
+                    background-color: #DDD7CE;
+                }
+            """)
+            checkbox_row.addWidget(cb)
+
+        layout.addLayout(checkbox_row)
+
+        # Generate Button
+        generate_btn = QPushButton("Generate")
+        generate_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #222052;
+                color: #EFE9E1;
+                font-weight: bold;
+                border-radius: 16px;
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #000000;
+            }
+        """)
+        generate_btn.clicked.connect(lambda: self.generate_password_ui(generate_password))
+        layout.addWidget(generate_btn, alignment=Qt.AlignCenter)
+
+        # Copy Button
+        copy_btn = QPushButton("Copy to Clipboard")
+        copy_btn.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                color: #222052;
+                border: none;
+                font-size: 12px;
+                text-decoration: underline;
+                margin-top: 10px;
+            }
+        """)
+        copy_btn.clicked.connect(self.copy_password_to_clipboard)
+        layout.addWidget(copy_btn, alignment=Qt.AlignCenter)
 
         widget.setLayout(layout)
         return widget
+
     
     def generate_password_ui(self, generator_func):
         length = self.length_input.value()
@@ -368,6 +716,11 @@ class HomeWindow(QWidget):
             use_symbols=self.symbols_cb.isChecked()
         )
         self.output_box.setText(password)
+
+        # Update quality bar
+        score = self.evaluate_password_strength(password)
+        self.quality_bar.setValue(score)
+
 
     def copy_password_to_clipboard(self):
         from PyQt5.QtWidgets import QApplication
@@ -458,6 +811,26 @@ class HomeWindow(QWidget):
         layout.addWidget(self.notif_list)
         widget.setLayout(layout)
         return widget
+    
+    def evaluate_password_strength(self, password: str) -> int:
+        import re
+
+        length = len(password)
+        score = 0
+
+        if length >= 8:
+            score += 25
+        if re.search(r"[A-Z]", password):
+            score += 20
+        if re.search(r"[a-z]", password):
+            score += 20
+        if re.search(r"[0-9]", password):
+            score += 20
+        if re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+            score += 15
+
+        return min(score, 100)
+
 
 
 
