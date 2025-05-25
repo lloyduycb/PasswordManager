@@ -85,17 +85,39 @@ def insert_password_entry(name, email, url, password, notes, folder_id, expiry_d
         conn = sqlite3.connect("vault.db")
         c = conn.cursor()
 
-        last_modified = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         c.execute("""
             INSERT INTO passwords 
-            (name, email, url, password, notes, folder_id, expiry_date, last_modified) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (name, email, url, password, notes, folder_id, expiry_date, last_modified))
+            (name, email, url, password, notes, folder_id, expiry_date, last_modified, last_used) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (name, email, url, password, notes, folder_id, expiry_date, now, now))
 
         conn.commit()
     except sqlite3.Error as e:
-        print(f"Database error: {e}")
+        print(f"Database error (insert): {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+def update_password_entry(entry_id, name, email, url, password, notes, folder_id, expiry_date=None):
+    conn = None
+    try:
+        conn = sqlite3.connect("vault.db")
+        c = conn.cursor()
+
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        c.execute("""
+            UPDATE passwords
+            SET name = ?, email = ?, url = ?, password = ?, notes = ?, folder_id = ?, expiry_date = ?, last_modified = ?
+            WHERE id = ?
+        """, (name, email, url, password, notes, folder_id, expiry_date, now, entry_id))
+
+        conn.commit()
+    except sqlite3.Error as e:
+        print(f"Database error (update): {e}")
         raise
     finally:
         if conn:
