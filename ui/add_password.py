@@ -1,6 +1,8 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QLineEdit, QTextEdit, QPushButton, QMessageBox, QComboBox
 from core.db import insert_password_entry, fetch_folders
 from core.crypto import encrypt_password
+from core.utils import get_password_strength
+
 
 class AddPasswordWindow(QWidget):
     def __init__(self):
@@ -20,6 +22,10 @@ class AddPasswordWindow(QWidget):
         self.url_input.setPlaceholderText("URL")
 
         self.password_input = QLineEdit()
+        self.password_input.textChanged.connect(self.check_password_strength)
+
+        self.strength_label = QLabel("Password strength:")
+
         self.password_input.setPlaceholderText("Password")
 
         self.notes_input = QTextEdit()
@@ -47,6 +53,7 @@ class AddPasswordWindow(QWidget):
         layout.addWidget(self.email_input)
         layout.addWidget(self.url_input)
         layout.addWidget(self.password_input)
+        layout.addWidget(self.strength_label)
         layout.addWidget(self.notes_input)
         layout.addWidget(self.submit_btn)
 
@@ -79,3 +86,11 @@ class AddPasswordWindow(QWidget):
             import traceback
             traceback.print_exc()
             QMessageBox.critical(self, "Error", f"Failed to save password:\n{str(e)}")
+
+    def check_password_strength(self):
+        pwd = self.password_input.text()
+        strength, color = get_password_strength(pwd)
+        self.strength_label.setText(f"Password strength: {strength}")
+        self.strength_label.setStyleSheet(f"color: {color}; font-weight: bold")
+
+
