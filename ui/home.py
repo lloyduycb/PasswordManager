@@ -80,8 +80,8 @@ class HomeWindow(QWidget):
 
         sidebar_layout.addWidget(self.vault_menu_widget)
 
-        tools_btn = QPushButton("Tools")
-        tools_btn.clicked.connect(lambda: self.switch_view("Tools"))
+        tools_btn = QPushButton("Password Generator")
+        tools_btn.clicked.connect(lambda: self.switch_view("Password Generator"))
         sidebar_layout.addWidget(tools_btn)
 
         sidebar_layout.addStretch()
