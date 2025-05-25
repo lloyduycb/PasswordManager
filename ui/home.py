@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QListWidget,
-    QLineEdit, QListWidgetItem, QStackedLayout, QFrame, QMessageBox, QComboBox, QDialog
+    QLineEdit, QListWidgetItem, QStackedLayout, QFrame, QMessageBox, QComboBox, QDialog, QApplication
 )
 from PyQt5.QtCore import Qt, QTimer, QEvent, QTime
 from ui.master_password import MasterPasswordWindow
@@ -795,12 +795,18 @@ class HomeWindow(QWidget):
     def auto_lock(self):
         print("Auto-lock triggered")
         self.lock_timer.stop()
+
+        # Close all open windows that might still be alive
+        for widget in QApplication.topLevelWidgets():
+            if widget is not self:
+                widget.close()
+
         self.close()
 
-        # Relaunch Master Password Window
-        
+        # Show master password screen
         self.master_pw_window = MasterPasswordWindow(self.get_current_username())
         self.master_pw_window.show()
+
     
     def get_current_username(self):
         return self.username if hasattr(self, 'username') else ""
