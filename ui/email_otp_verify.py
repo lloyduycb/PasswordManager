@@ -1,4 +1,6 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox
+from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QFrame, QHBoxLayout
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 from PyQt5.QtCore import QTimer
 import sqlite3
 import datetime
@@ -12,22 +14,92 @@ class EmailOTPVerifyWindow(QWidget):
         self.setWindowTitle("Email OTP Verification")
         self.setGeometry(550, 250, 300, 150)
 
-        layout = QVBoxLayout()
+        from PyQt5.QtWidgets import QFrame, QHBoxLayout
+
+        outer_layout = QVBoxLayout(self)
+        outer_layout.setAlignment(Qt.AlignCenter)
+
+        card = QFrame()
+        card.setStyleSheet("""
+            QFrame {
+                background-color: #EFE9E1;
+                border-radius: 20px;
+                padding: 30px;
+                font-family: 'Segoe UI', sans-serif;
+            }
+        """)
+        card_layout = QVBoxLayout(card)
+        card_layout.setSpacing(20)
+        card_layout.setAlignment(Qt.AlignCenter)
+
+        # Title
+        title = QLabel("Email OTP Verification")
+        title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #222052;")
+        card_layout.addWidget(title)
+
+        prompt = QLabel("We’ve sent a 6-digit OTP to your email.")
+        prompt.setAlignment(Qt.AlignCenter)
+        prompt.setStyleSheet("font-size: 13px; color: #444;")
+        card_layout.addWidget(prompt)
+
+        # OTP Input
         self.otp_input = QLineEdit()
-        self.otp_input.setPlaceholderText("Enter OTP from email")
+        self.otp_input.setPlaceholderText("●●●●●●")
+        self.otp_input.setMaxLength(6)
+        self.otp_input.setAlignment(Qt.AlignCenter)
+        self.otp_input.setStyleSheet("""
+            QLineEdit {
+                font-size: 20px;
+                padding: 8px;
+                border: 2px solid #C3B4A6;
+                border-radius: 12px;
+                background-color: #FFF;
+                letter-spacing: 10px;
+            }
+        """)
+        card_layout.addWidget(self.otp_input)
 
+        # Verify Button
         self.verify_btn = QPushButton("Verify")
+        self.verify_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #222052;
+                color: #EFE9E1;
+                font-weight: bold;
+                border-radius: 12px;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background-color: #000000;
+            }
+        """)
         self.verify_btn.clicked.connect(self.verify_otp)
+        card_layout.addWidget(self.verify_btn)
 
-        layout.addWidget(QLabel("We've sent a 6-digit OTP to your email."))
-        layout.addWidget(self.otp_input)
-        layout.addWidget(self.verify_btn)
+        # Resend Button
+        self.resend_btn = QPushButton("Resend OTP")
+        self.resend_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #DDD7CE;
+                color: #888888;
+                font-size: 12px;
+                border: none;
+                border-radius: 6px;
+                padding: 6px;
+            }
+            QPushButton:disabled {
+                background-color: #C3B4A6;
+                color: #777777;
+            }
+        """)
 
-        self.setLayout(layout)
+        outer_layout.addWidget(card)
+        self.setLayout(outer_layout)
 
         self.resend_btn = QPushButton("Resend OTP")
         self.resend_btn.clicked.connect(self.resend_otp)
-        layout.addWidget(self.resend_btn)
+        card_layout.addWidget(self.resend_btn)
 
         self.resend_btn.setEnabled(False)
         self.cooldown_timer = QTimer()

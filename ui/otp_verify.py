@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox
+from PyQt5.QtCore import Qt
 from core.emailer import send_otp_email
 from ui.email_otp_verify import EmailOTPVerifyWindow
 import sqlite3, random, datetime
@@ -15,23 +16,86 @@ class OTPVerifyWindow(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("Enter the 6-digit code from your Authenticator app:"))
+        from PyQt5.QtWidgets import QFrame, QHBoxLayout
+        from PyQt5.QtGui import QFont
+        from PyQt5.QtCore import Qt
+
+        self.setStyleSheet("background-color: #222052;")
+
+        outer_layout = QVBoxLayout(self)
+        outer_layout.setAlignment(Qt.AlignCenter)
+
+        card = QFrame()
+        card.setStyleSheet("""
+            QFrame {
+                background-color: #EFE9E1;
+                border-radius: 20px;
+                padding: 30px;
+                font-family: 'Segoe UI', sans-serif;           
+            }
+        """)
+        card_layout = QVBoxLayout(card)
+        card_layout.setSpacing(20)
+        card_layout.setAlignment(Qt.AlignCenter)
+
+        title = QLabel("Authenticator")
+        title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #222052;")
+        card_layout.addWidget(title)
+
+        prompt = QLabel("Enter the 6-digit code from your app:")
+        prompt.setAlignment(Qt.AlignCenter)
+        prompt.setStyleSheet("color: #444; font-size: 13px;")
+        card_layout.addWidget(prompt)
 
         self.otp_input = QLineEdit()
         self.otp_input.setMaxLength(6)
-        self.otp_input.setPlaceholderText("123456")
-        layout.addWidget(self.otp_input)
+        self.otp_input.setPlaceholderText("●●●●●●")
+        self.otp_input.setAlignment(Qt.AlignCenter)
+        self.otp_input.setStyleSheet("""
+            QLineEdit {
+                background-color: #FFF;
+                border: 2px solid #C3B4A6;
+                border-radius: 12px;
+                font-size: 20px;
+                padding: 8px;
+                letter-spacing: 10px;
+            }
+        """)
+        card_layout.addWidget(self.otp_input)
 
         verify_btn = QPushButton("Verify")
+        verify_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #222052;
+                color: #EFE9E1;
+                font-weight: bold;
+                border-radius: 12px;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background-color: #000000;
+            }
+        """)
         verify_btn.clicked.connect(self.verify_otp)
-        layout.addWidget(verify_btn)
+        card_layout.addWidget(verify_btn)
 
         use_email_btn = QPushButton("Use Email OTP Instead")
+        use_email_btn.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                color: #222052;
+                font-size: 12px;
+                text-decoration: underline;
+                padding: 0px;
+                border: none;
+            }
+        """)
         use_email_btn.clicked.connect(self.use_email_otp)
-        layout.addWidget(use_email_btn)
+        card_layout.addWidget(use_email_btn)
 
-        self.setLayout(layout)
+        outer_layout.addWidget(card)
+
 
     def verify_otp(self):
         entered_code = self.otp_input.text().strip()
@@ -77,8 +141,6 @@ class OTPVerifyWindow(QWidget):
         conn.close()
 
         send_otp_email(email, otp_code)
-        QMessageBox.information(self, "OTP Sent", f"A login code has been sent to {email}.")
-
         # Open Email OTP Window
         self.email_otp_window = EmailOTPVerifyWindow(self.username, self.on_success)
         self.email_otp_window.show()

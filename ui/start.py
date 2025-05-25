@@ -13,7 +13,6 @@ class StartPage(QWidget):
             }
         """)
 
-        
 
         outer_layout = QVBoxLayout()
         outer_layout.setAlignment(Qt.AlignCenter)
