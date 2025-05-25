@@ -549,16 +549,50 @@ class HomeWindow(QWidget):
 
     def reload_recent_view(self):
         from core.db import fetch_recent_passwords
+        from PyQt5.QtWidgets import QListWidgetItem, QWidget, QHBoxLayout, QLabel
+        from PyQt5.QtCore import QSize, Qt
+        from PyQt5.QtGui import QFont
 
         self.recent_list.clear()
-        recent_entries = fetch_recent_passwords()
-        self.recent_entries = recent_entries
+        self.recent_entries = fetch_recent_passwords()
 
-        for entry in recent_entries:
-            if len(entry) >= 2:
-                entry_id, name = entry[0], entry[1]
-                item = QListWidgetItem(name if name else "(Unnamed)")
-                self.recent_list.addItem(item)
+        for entry in self.recent_entries:
+            if len(entry) < 2:
+                continue
+            entry_id, name = entry[0], entry[1]
+
+            # Row widget
+            row_widget = QWidget()
+            row_widget.setFixedHeight(45)
+            row_layout = QHBoxLayout(row_widget)
+            row_layout.setContentsMargins(20, 12, 20, 12)
+            row_layout.setSpacing(10)
+            row_widget.setStyleSheet("""
+                QWidget {
+                    background-color: #EEE5D3;
+                    border-radius: 12px;
+                }
+            """)
+
+            name_label = QLabel(name if name else "(Unnamed)")
+            name_label.setFont(QFont("Segoe UI", 8, QFont.Bold))
+            name_label.setStyleSheet("color: #222052;")
+
+            icon_label = QLabel("➡️")
+            icon_label.setFont(QFont("Segoe UI Emoji", 10))
+            icon_label.setStyleSheet("color: #222052;")
+            icon_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+
+            row_layout.addWidget(name_label)
+            row_layout.addStretch()
+            row_layout.addWidget(icon_label)
+
+            item = QListWidgetItem()
+            item.setSizeHint(QSize(0, 54))
+            self.recent_list.addItem(item)
+            self.recent_list.setItemWidget(item, row_widget)
+
+
 
 
     def reload_all(self):
