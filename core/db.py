@@ -15,6 +15,8 @@ def create_user_table():
             folder_id INTEGER,
             last_used DATETIME DEFAULT CURRENT_TIMESTAMP,
             is_favourite INTEGER DEFAULT 0,
+            expiry_date DATE,
+            last_modified DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (folder_id) REFERENCES folders(id)
         )
     ''')
@@ -52,6 +54,8 @@ def init_db():
             folder_id INTEGER,
             last_used DATETIME DEFAULT CURRENT_TIMESTAMP,
             is_favourite INTEGER DEFAULT 0,
+            expiry_date DATE,
+            last_modified DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (folder_id) REFERENCES folders(id)
         )
     ''')
