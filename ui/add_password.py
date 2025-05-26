@@ -138,10 +138,11 @@ class AddPasswordWindow(QWidget):
         clipboard.setText(text)
 
     def save_entry(self):
+
         name = self.name_input.text().strip()
         email = self.email_input.text().strip()
         url = self.url_input.text().strip()
-        password = encrypt_password(self.password_input.text().strip())
+        password_raw = self.password_input.text().strip()
         notes = self.notes_input.toPlainText().strip()
         expiry_date = self.expiry_input.date().toString("yyyy-MM-dd")
 
@@ -149,11 +150,18 @@ class AddPasswordWindow(QWidget):
             QMessageBox.warning(self, "Missing", "Name field is required.")
             return
 
-        from core.db import insert_password_entry
+        if not password_raw:
+            QMessageBox.warning(self, "Missing", "Password field is required.")
+            return
 
-        folder_id = None  # Or assign properly if you implement folder selection
-        insert_password_entry(name, email, url, password, notes, folder_id, expiry_date)
+        encrypted_password = encrypt_password(password_raw)
 
+        folder_id = None  # Placeholder. If you later add folder selection, update this.
 
-        QMessageBox.information(self, "Saved", f"Password for '{name}' saved.")
-        self.close()
+        try:
+            insert_password_entry(name, email, url, encrypted_password, notes, folder_id, expiry_date)
+            QMessageBox.information(self, "Saved", f"Password for '{name}' saved.")
+            self.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to save password:\n{str(e)}")
+
