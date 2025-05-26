@@ -149,14 +149,11 @@ class AddPasswordWindow(QWidget):
             QMessageBox.warning(self, "Missing", "Name field is required.")
             return
 
-        conn = sqlite3.connect("vault.db")
-        c = conn.cursor()
-        c.execute("""
-            INSERT INTO passwords (name, email, url, password, notes, expiry_date)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (name, email, url, password, notes, expiry_date))
-        conn.commit()
-        conn.close()
+        from core.db import insert_password_entry
+
+        folder_id = None  # Or assign properly if you implement folder selection
+        insert_password_entry(name, email, url, password, notes, folder_id, expiry_date)
+
 
         QMessageBox.information(self, "Saved", f"Password for '{name}' saved.")
         self.close()
